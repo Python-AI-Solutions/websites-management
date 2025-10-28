@@ -26,8 +26,8 @@ for site in */; do
 
   cd "${site_name}"
 
-  # Check if it's a valid git repo
-  if [ ! -d ".git" ]; then
+  # Check if it's a valid git repo (submodules have .git as a file, not directory)
+  if [ ! -e ".git" ]; then
     echo "   ⚠️  Not a git repository (submodule may not be initialized)"
     cd ..
     continue

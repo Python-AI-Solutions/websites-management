@@ -2,7 +2,7 @@ zone_name     = "pythonaisolutions.com"
 gmail_enabled = false
 
 # Replace placeholder values below with the authoritative DNS data once verified.
-google_site_verification = "TODO_fill_google_site_verification_token"
+google_site_verification = "CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM"
 
 apex_records = {
   a = [
@@ -13,7 +13,7 @@ apex_records = {
   ]
 
   txt = [
-    { value = "google-site-verification=TODO_replace_with_token", ttl = 3600 },
+    { value = "google-site-verification=CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM", ttl = 3600 },
     # SPF will be managed by google-workspace-email module when gmail_enabled = true
     # Keeping it here temporarily until you're ready to enable Google Workspace
     { value = "v=spf1 include:_spf.google.com ~all", ttl = 3600 },
@@ -71,15 +71,15 @@ subdomain_records = {
 
   # GitHub Pages challenge records - these will need to be regenerated after DNS migration
   # GitHub will provide new challenge values when you verify the domain again
-  "_github-pages-challenge-leej3" = {
-    txt = [
-      { value = "36f3cde9c7c302988b87bfb8b2965a", ttl = 86400 },
-    ]
-  }
+  # "_github-pages-challenge-leej3" = {
+  #   txt = [
+  #     { value = "36f3cde9c7c302988b87bfb8b2965a", ttl = 86400 },
+  #   ]
+  # }
 
-  "_github-pages-challenge-python-ai-solutions.presentations" = {
-    txt = [
-      { value = "36e88ec73472f3e0d4ee4d35ea3620", ttl = 86400 },
-    ]
-  }
+  # "_github-pages-challenge-python-ai-solutions.presentations" = {
+  #   txt = [
+  #     { value = "36e88ec73472f3e0d4ee4d35ea3620", ttl = 86400 },
+  #   ]
+  # }
 }

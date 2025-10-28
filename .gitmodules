@@ -1,0 +1,18 @@
+[submodule "sites/no-strings-resume"]
+	path = sites/no-strings-resume
+	url = git@github.com:NoStringsDevelopment/no-strings-resume.git
+[submodule "sites/agentic-cervical-screener"]
+	path = sites/agentic-cervical-screener
+	url = git@github.com:Python-AI-Solutions/agentic-cervical-screener.git
+[submodule "sites/company-handbook"]
+	path = sites/company-handbook
+	url = git@github.com:Python-AI-Solutions/company-handbook.git
+[submodule "sites/pythonaisolutions_website"]
+	path = sites/pythonaisolutions_website
+	url = git@github.com:Python-AI-Solutions/pythonaisolutions_website.git
+[submodule "sites/operandi"]
+	path = sites/operandi
+	url = git@github.com:Python-AI-Solutions/operandi.git
+[submodule "sites/hih-presentation"]
+	path = sites/hih-presentation
+	url = git@github.com:python-ai-solutions/hih-presentation.git

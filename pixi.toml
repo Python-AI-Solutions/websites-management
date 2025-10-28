@@ -42,3 +42,6 @@ cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=..
 
 [tasks.verify-dns]
 cmd = "bash scripts/verify-dns.sh"
+
+[tasks.analyze-sites]
+cmd = "bash scripts/analyze-sites.sh"

@@ -43,7 +43,7 @@ resource "cloudflare_record" "mx" {
   type     = "MX"
   ttl      = var.mx_ttl
   priority = each.value.priority
-  value    = each.value.value
+  content  = each.value.value
 }
 
 resource "cloudflare_record" "spf" {
@@ -53,7 +53,7 @@ resource "cloudflare_record" "spf" {
   name    = var.zone_name
   type    = "TXT"
   ttl     = var.spf_ttl
-  value   = var.spf_txt
+  content = var.spf_txt
 }
 
 resource "cloudflare_record" "dmarc" {
@@ -63,7 +63,7 @@ resource "cloudflare_record" "dmarc" {
   name    = "_dmarc"
   type    = "TXT"
   ttl     = var.dmarc_ttl
-  value   = local.dmarc_value
+  content = local.dmarc_value
 }
 
 resource "cloudflare_record" "site_verification" {
@@ -73,7 +73,7 @@ resource "cloudflare_record" "site_verification" {
   name    = var.zone_name
   type    = "TXT"
   ttl     = var.site_verification_ttl
-  value   = "google-site-verification=${var.google_site_verification}"
+  content = "google-site-verification=${var.google_site_verification}"
 }
 
 resource "cloudflare_record" "dkim" {
@@ -83,5 +83,5 @@ resource "cloudflare_record" "dkim" {
   name    = "${each.value.selector}._domainkey"
   type    = "TXT"
   ttl     = try(each.value.ttl, var.spf_ttl)
-  value   = each.value.value
+  content = each.value.value
 }

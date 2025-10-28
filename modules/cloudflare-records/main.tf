@@ -116,7 +116,7 @@ resource "cloudflare_record" "a" {
   zone_id = var.zone_id
   name    = each.value.name
   type    = "A"
-  value   = each.value.value
+  content = each.value.value
   ttl     = each.value.ttl
   proxied = each.value.proxied
 }
@@ -127,7 +127,7 @@ resource "cloudflare_record" "aaaa" {
   zone_id = var.zone_id
   name    = each.value.name
   type    = "AAAA"
-  value   = each.value.value
+  content = each.value.value
   ttl     = each.value.ttl
   proxied = each.value.proxied
 }
@@ -138,7 +138,7 @@ resource "cloudflare_record" "cname" {
   zone_id = var.zone_id
   name    = each.value.name
   type    = "CNAME"
-  value   = each.value.value
+  content = each.value.value
   ttl     = each.value.ttl
   proxied = each.value.proxied
 }
@@ -149,7 +149,7 @@ resource "cloudflare_record" "txt" {
   zone_id = var.zone_id
   name    = each.value.name
   type    = "TXT"
-  value   = each.value.value
+  content = each.value.value
   ttl     = each.value.ttl
 }
 
@@ -159,7 +159,7 @@ resource "cloudflare_record" "mx" {
   zone_id  = var.zone_id
   name     = each.value.name
   type     = "MX"
-  value    = each.value.value
+  content  = each.value.value
   priority = each.value.priority
   ttl      = each.value.ttl
 }
@@ -185,7 +185,7 @@ resource "cloudflare_record" "ns" {
   zone_id = var.zone_id
   name    = each.value.name
   type    = "NS"
-  value   = each.value.value
+  content = each.value.value
   ttl     = each.value.ttl
 }
 
