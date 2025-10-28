@@ -1,0 +1,13 @@
+.env
+.env.local
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+.tofu-cache/
+.DS_Store
+__pycache__/
+.pixi/
+.venv/
+pixi.lock
