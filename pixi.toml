@@ -39,3 +39,6 @@ cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=..
 
 [tasks.apply-prod]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
+
+[tasks.verify-dns]
+cmd = "bash scripts/verify-dns.sh"
