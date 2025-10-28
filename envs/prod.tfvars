@@ -14,21 +14,9 @@ apex_records = {
 
   txt = [
     { value = "google-site-verification=TODO_replace_with_token", ttl = 3600 },
-    { value = "MS=ms9071387??", ttl = 3600 }, # TODO confirm Microsoft verification string
+    # SPF will be managed by google-workspace-email module when gmail_enabled = true
+    # Keeping it here temporarily until you're ready to enable Google Workspace
     { value = "v=spf1 include:_spf.google.com ~all", ttl = 3600 },
-  ]
-
-  srv = [
-    {
-      service  = "_autodiscover"
-      proto    = "_tcp"
-      name     = "@"
-      priority = 0
-      weight   = 0
-      port     = 443
-      target   = "autodiscover.reg365.net"
-      ttl      = 86400
-    }
   ]
 }
 
@@ -41,7 +29,7 @@ subdomain_records = {
 
   "presentations" = {
     cname = [
-      { value = "hih-presentation.TODO-update", ttl = 3600, proxied = false },
+      { value = "hih-presentation.pages.dev", ttl = 3600, proxied = false },
     ]
   }
 
@@ -81,32 +69,8 @@ subdomain_records = {
     ]
   }
 
-  "autoconfig" = {
-    cname = [
-      { value = "autoconfig.register365.com", ttl = 86400 },
-    ]
-  }
-
-  "imap" = {
-    cname = [
-      { value = "imap.reg365.net", ttl = 86400 },
-    ]
-  }
-
-  "pop3" = {
-    cname = [
-      { value = "pop3.reg365.net", ttl = 86400 },
-    ]
-  }
-
-  "cpanel" = {
-    ns = [
-      { value = "ns0.reg365.net", ttl = 86400 },
-      { value = "ns1.reg365.net", ttl = 86400 },
-      { value = "ns2.reg365.net", ttl = 86400 },
-    ]
-  }
-
+  # GitHub Pages challenge records - these will need to be regenerated after DNS migration
+  # GitHub will provide new challenge values when you verify the domain again
   "_github-pages-challenge-leej3" = {
     txt = [
       { value = "36f3cde9c7c302988b87bfb8b2965a", ttl = 86400 },
