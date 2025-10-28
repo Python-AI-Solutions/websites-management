@@ -5,6 +5,5 @@ variable "zone_name" {
 
 variable "account_id" {
   type        = string
-  description = "Optional Cloudflare account ID to disambiguate zones."
-  default     = null
+  description = "Cloudflare account ID for the zone."
 }

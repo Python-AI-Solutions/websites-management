@@ -54,7 +54,7 @@ If you change any of these values later, re-run `pixi run plan:<workspace>` and 
 3. After applying, return to the Admin console and click **Start authentication** for each selector so Google begins signing outbound mail.
 
 ## 6. Post-migration validation
-1. Run `pixi run plan:prod` and inspect `root/tfplan-prod.txt` to confirm Google-related records will be created as expected.
-2. Apply the changes (`pixi run apply:prod`) once Cloudflare is authoritative for the zone.
+1. Run `pixi run plan-prod` and inspect `root/tfplan-prod.txt` to confirm Google-related records will be created as expected.
+2. Apply the changes (`pixi run apply-prod`) once Cloudflare is authoritative for the zone.
 3. Use [Google’s CheckMX tool](https://toolbox.googleapps.com/apps/checkmx/) to verify MX, SPF, DKIM, and DMARC are all passing.
 4. Send test emails to confirm delivery in both directions.

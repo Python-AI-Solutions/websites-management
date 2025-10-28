@@ -22,16 +22,16 @@ All Terraform/OpenTofu commands run inside the Docker container via Pixi tasks:
 
 ```bash
 pixi run init            # tofu init inside the container
-pixi run ws:staging      # create/select the staging workspace
-pixi run plan:staging    # writes root/tfplan-staging.tfplan
+pixi run ws-staging      # create/select the staging workspace
+pixi run plan-staging    # writes root/tfplan-staging.tfplan
 scripts/tofu.sh show -no-color tfplan-staging.tfplan   # inspect the plan
-pixi run apply:staging   # apply staging changes (auto-approve)
-pixi run ws:prod
-pixi run plan:prod
-pixi run apply:prod
+pixi run apply-staging   # apply staging changes (auto-approve)
+pixi run ws-prod
+pixi run plan-prod
+pixi run apply-prod
 ```
 
-The same tasks power CI workflows, so local and GitHub Actions runs stay identical. Use `pixi run pre-commit:install` once to wire up the formatting/lint hooks, and `pixi run pre-commit:run` to check the full tree.
+The same tasks power CI workflows, so local and GitHub Actions runs stay identical. Use `pixi run pre-commit install` once to wire up the formatting/lint hooks, and `pixi run pre-commit run --all` to check the full tree.
 
 ## Managing DNS data
 DNS records live in two variables:

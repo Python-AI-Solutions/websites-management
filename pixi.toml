@@ -29,13 +29,13 @@ cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
 cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
 
 [tasks.plan-staging]
-cmd = "cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan'"
 
 [tasks.plan-prod]
-cmd = "cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
 
 [tasks.apply-staging]
-cmd = "cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
 
 [tasks.apply-prod]
-cmd = "cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"

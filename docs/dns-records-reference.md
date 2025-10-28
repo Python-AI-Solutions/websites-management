@@ -33,7 +33,7 @@ This reference explains how the current registrar records map into the OpenTofu 
 | `cpanel` | NS x3 | `ns0/1/2.reg365.net` | Retain if you still delegate this subdomain to the registrar |
 | `_github-pages-challenge-*` | TXT | `36f3cde9c7c302...`, `36e88ec73472f3...` | Rename keys to the exact challenge hostnames and paste full tokens |
 
-When you discover the precise values, edit `envs/prod.tfvars` and re-run `pixi run plan:prod` to confirm no drift remains. Keep staging in sync if you rely on those hostnames for testing.
+When you discover the precise values, edit `envs/prod.tfvars` and re-run `pixi run plan-prod` to confirm no drift remains. Keep staging in sync if you rely on those hostnames for testing.
 
 ## Adding new records
 Add new entries to the relevant map, following the existing structure. Examples:

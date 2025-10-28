@@ -9,7 +9,7 @@ module "zone" {
   source = "../modules/cloudflare-zone"
 
   zone_name  = var.zone_name
-  account_id = var.cloudflare_account_id != "" ? var.cloudflare_account_id : null
+  account_id = var.cloudflare_account_id
 }
 
 module "records" {

@@ -3,7 +3,7 @@ locals {
     for label, cfg in var.records :
     label => merge(cfg, {
       label           = label
-      sanitized_label = label == "@" ? "apex" : regexreplace(label, "[^a-zA-Z0-9]", "_")
+      sanitized_label = label == "@" ? "apex" : replace(replace(label, ".", "_"), "-", "_")
       record_name     = label == "@" ? var.zone_name : label
       fqdn            = label == "@" ? var.zone_name : "${label}.${var.zone_name}"
     })

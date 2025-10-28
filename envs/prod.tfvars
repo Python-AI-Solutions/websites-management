@@ -1,5 +1,5 @@
 zone_name     = "pythonaisolutions.com"
-gmail_enabled = true
+gmail_enabled = false
 
 # Replace placeholder values below with the authoritative DNS data once verified.
 google_site_verification = "TODO_fill_google_site_verification_token"
@@ -83,7 +83,7 @@ subdomain_records = {
 
   "autoconfig" = {
     cname = [
-      { value = "autoconfig.TODO-complete", ttl = 86400 },
+      { value = "autoconfig.register365.com", ttl = 86400 },
     ]
   }
 
@@ -107,15 +107,15 @@ subdomain_records = {
     ]
   }
 
-  "_github-pages-challenge-1" = {
+  "_github-pages-challenge-leej3" = {
     txt = [
-      { value = "36f3cde9c7c302TODO-complete", ttl = 86400 },
+      { value = "36f3cde9c7c302988b87bfb8b2965a", ttl = 86400 },
     ]
   }
 
-  "_github-pages-challenge-2" = {
+  "_github-pages-challenge-python-ai-solutions.presentations" = {
     txt = [
-      { value = "36e88ec73472f3TODO-complete", ttl = 86400 },
+      { value = "36e88ec73472f3e0d4ee4d35ea3620", ttl = 86400 },
     ]
   }
 }
