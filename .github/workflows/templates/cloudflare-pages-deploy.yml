@@ -1,0 +1,88 @@
+# Cloudflare Pages Deployment Template
+#
+# Copy this file to your site repository at: .github/workflows/deploy.yml
+#
+# Prerequisites:
+# 1. Cloudflare Pages project must be created via IaC (cloudflare-management repo)
+# 2. GitHub secret CF_API_TOKEN must be configured in repository settings
+#
+# Customize the following variables for your site:
+# - PROJECT_NAME: Must match the Pages project name in Terraform
+# - BUILD_COMMAND: Command to build your site (e.g., "pixi run build", "npm run build")
+# - BUILD_DIR: Output directory containing built site (e.g., "_site", "out", "dist")
+#
+# Optional: Add steps for copying additional files to BUILD_DIR if needed
+# (e.g., routes/_routes.json, _headers, _redirects)
+
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  PROJECT_NAME: "CHANGE_ME"  # Must match Terraform pages_projects key
+  BUILD_DIR: "CHANGE_ME"     # e.g., "_site", "out", "dist"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Choose ONE of the following setup options based on your project:
+
+      # Option 1: For Pixi projects (Quarto, Python, etc.)
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+
+      # Option 2: For Node.js projects (Next.js, React, etc.)
+      # - name: Setup Node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      #     cache: 'npm'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: pixi install  # or: npm install
+
+      # Optional: Run linting/formatting
+      # - name: Run pre-commit hooks
+      #   run: pixi run hooks  # or: npm run lint
+
+      # Optional: Run tests
+      # - name: Run tests
+      #   run: pixi run test  # or: npm test
+
+      # Build the site
+      - name: Build site
+        run: CHANGE_ME  # e.g., "pixi run build" or "npm run build"
+
+      # Optional: Copy additional files to build directory
+      # - name: Copy routing config
+      #   run: cp routes/_routes.json ${{ env.BUILD_DIR }}/
+
+      # Deploy preview for pull requests
+      - name: Deploy preview
+        if: github.event_name == 'pull_request'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          wranglerVersion: '3'
+          command: pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch ${{ github.head_ref }}
+
+      # Deploy production for main branch
+      - name: Deploy production
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          wranglerVersion: '3'
+          command: pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch main --commit-dirty=true

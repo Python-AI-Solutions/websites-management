@@ -3,6 +3,16 @@ output "zone_id" {
   value       = module.zone.zone_id
 }
 
+output "zone_name" {
+  description = "Cloudflare zone name."
+  value       = module.zone.zone_name
+}
+
+output "name_servers" {
+  description = "Cloudflare nameservers for this zone. Update these at your domain registrar."
+  value       = module.zone.name_servers
+}
+
 output "record_ids" {
   description = "Map of managed DNS record IDs."
   value       = module.records.record_ids
@@ -17,4 +27,16 @@ output "google_workspace_record_ids" {
     site  = try(module.google_workspace[0].site_verification_id, null)
     dkim  = try(module.google_workspace[0].dkim_record_ids, {})
   } : {}
+}
+
+output "pages_projects" {
+  description = "Cloudflare Pages projects and their URLs"
+  value = {
+    for name, project in module.pages_projects : name => {
+      project_id    = project.project_id
+      pages_dev_url = project.pages_dev_url
+      custom_domain = project.custom_domain
+      subdomain     = project.subdomain
+    }
+  }
 }

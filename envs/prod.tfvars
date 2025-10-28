@@ -27,11 +27,8 @@ subdomain_records = {
     ]
   }
 
-  "presentations" = {
-    cname = [
-      { value = "hih-presentation.pages.dev", ttl = 3600, proxied = false },
-    ]
-  }
+  # Note: presentations subdomain is now managed via pages_projects below
+  # DNS CNAME record is automatically created by the Cloudflare Pages module
 
   "cervical-screening" = {
     a = [
@@ -82,4 +79,20 @@ subdomain_records = {
   #     { value = "36e88ec73472f3e0d4ee4d35ea3620", ttl = 86400 },
   #   ]
   # }
+}
+
+# Cloudflare Pages projects for static sites
+# Each project automatically gets:
+# - Pages project created in Cloudflare account
+# - DNS CNAME record pointing custom domain to pages.dev URL
+# - Custom domain configured in Pages project
+pages_projects = {
+  "hih-presentation" = {
+    production_branch = "main"
+    build_command     = "pixi run build"
+    destination_dir   = "_site"
+    custom_domain     = "presentations.pythonaisolutions.com"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
 }

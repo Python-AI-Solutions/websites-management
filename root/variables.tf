@@ -178,3 +178,18 @@ variable "subdomain_records" {
   }))
   default = {}
 }
+
+variable "pages_projects" {
+  description = "Cloudflare Pages projects to manage"
+  type = map(object({
+    production_branch   = optional(string, "main")
+    build_command       = optional(string, "")
+    destination_dir     = optional(string, "")
+    custom_domain       = optional(string, "")
+    dns_ttl             = optional(number, 3600)
+    dns_proxied         = optional(bool, false)
+    production_env_vars = optional(map(string), {})
+    preview_env_vars    = optional(map(string), {})
+  }))
+  default = {}
+}

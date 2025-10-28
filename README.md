@@ -1,10 +1,17 @@
-# Cloudflare DNS with OpenTofu
+# Cloudflare Infrastructure with OpenTofu
 
-This repository manages the Cloudflare DNS zone for `pythonaisolutions.com` with OpenTofu, orchestrated by [Pixi](https://pixi.build/). It provides Infrastructure as Code for migrating from Register365 to Cloudflare while maintaining zero downtime for Google Workspace email.
+This repository manages Cloudflare infrastructure for `pythonaisolutions.com` with OpenTofu, orchestrated by [Pixi](https://pixi.build/). It provides Infrastructure as Code for:
+
+- **DNS zone management** - Migrating from Register365 to Cloudflare
+- **Cloudflare Pages projects** - Deploying static sites with automatic HTTPS
+- **Google Workspace email** - Maintaining zero downtime for email services
 
 ## Quick Start
 
-**New to this repo?** See the [Migration Guide](docs/migration-guide.md) for step-by-step instructions on migrating from Register365 to Cloudflare.
+**New to this repo?**
+- DNS migration: See [Migration Guide](docs/migration-guide.md)
+- Add a new static site: See [Pages Quick Start](docs/pages-quick-start.md)
+- Full Pages documentation: See [Cloudflare Pages IaC](docs/cloudflare-pages-iac.md)
 
 ## Prerequisites
 - [OpenTofu](https://opentofu.org/) 1.7.0+ (installed via Homebrew: `brew install opentofu`)
@@ -72,6 +79,40 @@ The `google-workspace-email` module provisions:
 - DKIM placeholders (update once Google issues active selectors)
 
 See `docs/google-workspace-setup.md` for the detailed checklist, including how to supply DKIM values after you migrate.
+
+## Cloudflare Pages (Static Sites)
+
+This repository manages Cloudflare Pages projects via Infrastructure as Code. All static sites are configured in `envs/prod.tfvars` under `pages_projects`.
+
+### Add a New Site (Quick)
+
+```bash
+# Automated setup
+./scripts/setup-new-site.sh PROJECT_NAME SUBDOMAIN "BUILD_COMMAND" "BUILD_DIR"
+
+# Example
+./scripts/setup-new-site.sh company-handbook handbook "pixi run build" "_site"
+
+# Apply infrastructure
+pixi run plan-prod && pixi run apply-prod
+
+# Add GitHub secret
+./scripts/add-github-secret.sh PROJECT_NAME
+
+# Copy workflow template to site repository
+cp .github/workflows/templates/cloudflare-pages-deploy.yml \
+   sites/PROJECT_NAME/.github/workflows/deploy.yml
+```
+
+See [Pages Quick Start](docs/pages-quick-start.md) for full instructions.
+
+### Current Sites
+
+| Project | Domain | Status |
+|---------|--------|--------|
+| hih-presentation | presentations.pythonaisolutions.com | ✅ Configured |
+| pythonaisolutions_website | www.pythonaisolutions.com | 🟡 Planned |
+| company-handbook | handbook.pythonaisolutions.com | 🟡 Planned |
 
 ## CI/CD
 GitHub Actions (`.github/workflows/ci.yml`) runs:
