@@ -4,7 +4,7 @@
 #
 # Prerequisites:
 # 1. Cloudflare Pages project must be created via IaC (cloudflare-management repo)
-# 2. GitHub secret CF_API_TOKEN must be configured in repository settings
+# 2. GitHub secret CF_API_KEY must be configured in repository settings
 #
 # Customize the following variables for your site:
 # - PROJECT_NAME: Must match the Pages project name in Terraform
@@ -74,7 +74,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
+          apiToken: ${{ secrets.CF_API_KEY }}
           wranglerVersion: '3'
           command: pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch ${{ github.head_ref }}
 
@@ -83,6 +83,6 @@ jobs:
         if: github.event_name == 'push'
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
+          apiToken: ${{ secrets.CF_API_KEY }}
           wranglerVersion: '3'
           command: pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch main --commit-dirty=true

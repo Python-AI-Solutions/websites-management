@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Add CF_API_TOKEN secret to a GitHub repository
+# Add CF_API_KEY secret to a GitHub repository
 #
 # Usage: ./scripts/add-github-secret.sh REPO_NAME
 #
@@ -47,7 +47,7 @@ if [ $# -lt 1 ]; then
   echo "Example:"
   echo "  $0 hih-presentation"
   echo ""
-  echo "This will add CF_API_TOKEN secret to:"
+  echo "This will add CF_API_KEY secret to:"
   echo "  github.com/python-ai-solutions/REPO_NAME"
   exit 1
 fi
@@ -82,13 +82,13 @@ echo -e "${BLUE}  Adding GitHub Secret${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo ""
 echo "Repository: $REPO"
-echo "Secret:     CF_API_TOKEN"
+echo "Secret:     CF_API_KEY"
 echo ""
 
 # Add the secret
-if echo "$CF_API_TOKEN" | gh secret set CF_API_TOKEN --repo "$REPO"; then
+if echo "$CF_API_TOKEN" | gh secret set CF_API_KEY --repo "$REPO"; then
   echo ""
-  echo -e "${GREEN}✓ Successfully added CF_API_TOKEN secret to $REPO${NC}"
+  echo -e "${GREEN}✓ Successfully added CF_API_KEY secret to $REPO${NC}"
   echo ""
   echo "The deployment workflow can now deploy to Cloudflare Pages."
 else
@@ -98,7 +98,7 @@ else
   echo "You can add it manually:"
   echo "  1. Go to: https://github.com/$REPO/settings/secrets/actions"
   echo "  2. Click 'New repository secret'"
-  echo "  3. Name: CF_API_TOKEN"
+  echo "  3. Name: CF_API_KEY"
   echo "  4. Value: [your Cloudflare API token]"
   exit 1
 fi
