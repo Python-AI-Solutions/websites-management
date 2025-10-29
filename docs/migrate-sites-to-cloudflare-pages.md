@@ -8,10 +8,10 @@ Based on the analysis, here are the sites and their recommended migration paths:
 
 | Site | Current Platform | Type | Migration Complexity | Recommended Action |
 |------|------------------|------|---------------------|-------------------|
-| hih-presentation | ? | Quarto/Static | ⚠️ In Progress | Complete setup (guide exists) |
-| pythonaisolutions_website | GitHub Pages? | Next.js | 🟡 Medium | Migrate to Cloudflare Pages |
-| company-handbook | Not deployed | Quarto/Static | 🟢 Easy | Deploy to Cloudflare Pages |
-| no-strings-resume | Not deployed | Next.js | 🟡 Medium | Deploy to Cloudflare Pages |
+| hih-presentation | Cloudflare Pages | Quarto/Static | ✅ Complete | Monitor via Pages workflow |
+| pythonaisolutions_website | Cloudflare Pages | Next.js (Static export) | ✅ Complete | Maintain via Pages workflow |
+| company-handbook | Cloudflare Pages | Quarto/Static | ✅ Complete | Maintain via Pages workflow |
+| no-strings-resume | Cloudflare Pages | React/Vite | ✅ Complete | Monitor via Pages workflow |
 
 ## Why Migrate to Cloudflare Pages?
 
@@ -263,52 +263,41 @@ open https://subdomain.pythonaisolutions.com
 **DNS**: `presentations.pythonaisolutions.com` → `hih-presentation.pages.dev`
 
 ### pythonaisolutions_website (Next.js)
+✅ **Status**: Deployed via Cloudflare Pages (`pythonaisolutions-website`)
 
-**Build command**: `npm run build` or `pixi run build`
-**Output directory**: Check `next.config.js` - likely `out/` or `.next/`
-**Current DNS**: `www.pythonaisolutions.com` → `leej3.github.io`
-**Target DNS**: `www.pythonaisolutions.com` → `pythonaisolutions-website.pages.dev`
+**Build command**: `npm run build`
+**Output directory**: `out/`
+**DNS**: `www.pythonaisolutions.com` → `pythonaisolutions-website.pages.dev`
 
-**Special considerations:**
-- Check if using SSR or static export
-- May need Pages Functions if using server-side features
-- Review `next.config.js` for configuration
-
-**Migration steps:**
-1. Create Cloudflare Pages project: `pythonaisolutions-website`
-2. Configure build in Pages or add GitHub Actions workflow
-3. Test deployment at `pythonaisolutions-website.pages.dev`
-4. Update DNS in main repo
-5. Add custom domain `www.pythonaisolutions.com`
-6. Verify site works
-7. Consider: Should apex redirect to www?
+**Key notes:**
+- Static export is enforced via `next.config.mjs (output: 'export')`
+- Deployment workflow lives at `sites/pythonaisolutions_website/.github/workflows/deploy.yml`
+- Ensure `CF_API_TOKEN` is present in repository secrets
+- Consider apex-to-www redirect once DNS migration is finalized
 
 ### company-handbook (Quarto)
+✅ **Status**: Deployed via Cloudflare Pages (`company-handbook`)
 
 **Build command**: `pixi run build`
 **Output directory**: `_site`
-**Current status**: Not deployed
-**Target DNS**: `handbook.pythonaisolutions.com` (new subdomain)
+**DNS**: `handbook.pythonaisolutions.com` → `company-handbook.pages.dev`
 
-**Migration steps:**
-1. Similar to hih-presentation
-2. Copy `.github/workflows/deploy.yml` from hih-presentation
-3. Update `PROJECT_NAME` to `company-handbook`
-4. Create Pages project in Cloudflare
-5. Add DNS record for `handbook.pythonaisolutions.com`
-6. Add custom domain in Pages
+**Key notes:**
+- Uses the Quarto workflow mirroring `hih-presentation`
+- Keep `routes/_routes.json` in sync if navigation changes
+- Validate handbook content in PR previews before merging
 
 ### no-strings-resume (Next.js/React)
+✅ **Status**: Deployed via Cloudflare Pages (`no-strings-resume`)
 
 **Build command**: `npm run build`
-**Output directory**: Check `package.json` and config
-**Current status**: Not deployed to pythonaisolutions.com
-**Decision needed**: Should this be on pythonaisolutions.com or separate domain?
+**Output directory**: `dist/`
+**DNS**: `resume.pythonaisolutions.com` → `no-strings-resume.pages.dev`
 
-**Possible options:**
-1. Deploy to `resume.pythonaisolutions.com`
-2. Keep as separate project (not on pythonaisolutions.com)
-3. Deploy to `nostringsdevelopment.com` instead
+**Key notes:**
+- Vite build stays framework-agnostic; no extra env vars needed
+- Deployment workflow lives at `sites/no-strings-resume/.github/workflows/deploy.yml`
+- Confirm PDF-export functionality in preview deployments before promoting to production
 
 ## Rollback Procedures
 

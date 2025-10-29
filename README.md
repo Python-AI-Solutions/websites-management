@@ -111,8 +111,9 @@ See [Pages Quick Start](docs/pages-quick-start.md) for full instructions.
 | Project | Domain | Status |
 |---------|--------|--------|
 | hih-presentation | presentations.pythonaisolutions.com | ✅ Configured |
-| pythonaisolutions_website | www.pythonaisolutions.com | 🟡 Planned |
-| company-handbook | handbook.pythonaisolutions.com | 🟡 Planned |
+| pythonaisolutions-website | www.pythonaisolutions.com | ✅ Configured |
+| company-handbook | handbook.pythonaisolutions.com | ✅ Configured |
+| no-strings-resume | resume.pythonaisolutions.com | ✅ Configured |
 
 ## CI/CD
 GitHub Actions (`.github/workflows/ci.yml`) runs:

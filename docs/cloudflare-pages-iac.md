@@ -242,9 +242,9 @@ Current sites (as of setup):
 | Project | Custom Domain | Framework | Status |
 |---------|---------------|-----------|--------|
 | hih-presentation | presentations.pythonaisolutions.com | Quarto | ✅ Configured |
-| pythonaisolutions_website | www.pythonaisolutions.com | Next.js | 🟡 Planned |
-| company-handbook | handbook.pythonaisolutions.com | Quarto | 🟡 Planned |
-| no-strings-resume | TBD | Next.js | 🟡 Planned |
+| pythonaisolutions-website | www.pythonaisolutions.com | Next.js | ✅ Configured |
+| company-handbook | handbook.pythonaisolutions.com | Quarto | ✅ Configured |
+| no-strings-resume | resume.pythonaisolutions.com | Vite/React | ✅ Configured |
 
 To add more:
 1. Add to `pages_projects` in `envs/prod.tfvars`

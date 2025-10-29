@@ -21,14 +21,8 @@ apex_records = {
 }
 
 subdomain_records = {
-  "www" = {
-    cname = [
-      { value = "leej3.github.io", ttl = 86400, proxied = false },
-    ]
-  }
-
-  # Note: presentations subdomain is now managed via pages_projects below
-  # DNS CNAME record is automatically created by the Cloudflare Pages module
+  # Note: presentations and www subdomains are managed via pages_projects below
+  # DNS CNAME records are automatically created by the Cloudflare Pages module
 
   "cervical-screening" = {
     a = [
@@ -92,6 +86,33 @@ pages_projects = {
     build_command     = "pixi run build"
     destination_dir   = "_site"
     custom_domain     = "presentations.pythonaisolutions.com"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
+  "company-handbook" = {
+    production_branch = "main"
+    build_command     = "pixi run build"
+    destination_dir   = "_site"
+    custom_domain     = "handbook.pythonaisolutions.com"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
+  "pythonaisolutions-website" = {
+    production_branch = "main"
+    build_command     = "npm run build"
+    destination_dir   = "out"
+    custom_domain     = "www.pythonaisolutions.com"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
+  "no-strings-resume" = {
+    production_branch = "main"
+    build_command     = "npm run build"
+    destination_dir   = "dist"
+    custom_domain     = "resume.pythonaisolutions.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
