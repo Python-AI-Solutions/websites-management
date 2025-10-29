@@ -34,7 +34,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Uncomment the following lines if your project uses git submodules:
+        # with:
+        #   submodules: recursive
 
       # Choose ONE of the following setup options based on your project:
 
@@ -43,15 +47,16 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.8.1
 
       # Option 2: For Node.js projects (Next.js, React, etc.)
-      # - name: Setup Node
+      # - name: Setup Node.js
       #   uses: actions/setup-node@v4
       #   with:
       #     node-version: '20'
-      #     cache: 'npm'
 
       # Install dependencies
       - name: Install dependencies
-        run: pixi install  # or: npm install
+        run: pixi install  # Pixi projects: "pixi install"
+                          # Node.js projects: "npm install" or use retry logic:
+                          # for i in 1 2 3; do npm install && break || sleep 10; done
 
       # Optional: Run linting/formatting
       # - name: Run pre-commit hooks
