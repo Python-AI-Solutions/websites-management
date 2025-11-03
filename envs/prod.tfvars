@@ -1,5 +1,5 @@
 zone_name     = "pythonaisolutions.com"
-gmail_enabled = false
+gmail_enabled = true
 
 # Replace placeholder values below with the authoritative DNS data once verified.
 google_site_verification = "CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM"
@@ -11,9 +11,7 @@ apex_records = {
 
   txt = [
     { value = "google-site-verification=CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM", ttl = 3600 },
-    # SPF will be managed by google-workspace-email module when gmail_enabled = true
-    # Keeping it here temporarily until you're ready to enable Google Workspace
-    { value = "v=spf1 include:_spf.google.com ~all", ttl = 3600 },
+    # SPF is now managed by google-workspace-email module (gmail_enabled = true)
   ]
 }
 
