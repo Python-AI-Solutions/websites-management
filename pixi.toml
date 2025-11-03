@@ -11,6 +11,7 @@ pre-commit = ">=4.3.0,<5"
 tflint = ">=0.58.1,<0.59"
 dnspython = ">=2.6,<3"
 python-hcl2 = ">=3.0,<4"
+requests = ">=2.31,<3"
 
 [tasks.init]
 cmd = "cd root && tofu init"

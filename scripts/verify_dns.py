@@ -12,11 +12,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import ssl
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
@@ -24,6 +21,7 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 import dns.exception
 import dns.resolver
 import hcl2
+import requests
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 TFVARS_PATH = ROOT_DIR / "envs" / "prod.tfvars"
@@ -71,9 +69,14 @@ def load_tofo_outputs() -> Dict:
     return json.loads(stdout[json_start:])
 
 
-def resolve_records(name: str, record_type: str) -> List[str]:
+def resolve_records(name: str, record_type: str, use_cloudflare_dns: bool = False) -> List[str]:
     resolver = dns.resolver.Resolver()
     resolver.lifetime = DEFAULT_TIMEOUT
+    if use_cloudflare_dns:
+        # Use Cloudflare DNS for authoritative answers
+        resolver.nameservers = ['1.1.1.1', '1.0.0.1']
+    # Otherwise use system resolver to test what the user would actually experience
+
     record_type = record_type.upper()
 
     try:
@@ -104,14 +107,44 @@ def compare_records(
     expected: Sequence[str],
     results: List[CheckResult],
     expectation: str,
+    case_sensitive: bool = False,
 ) -> None:
-    expected_clean = sorted(value.rstrip(".").lower() for value in expected)
-    actual = resolve_records(fqdn, record_type)
-    ok = actual == expected_clean
-    detail = (
-        f"{fqdn} {record_type}: expected {expected_clean}, observed {actual}"
-    )
-    results.append(CheckResult(expectation=expectation, ok=ok, details=detail))
+    if case_sensitive:
+        expected_clean = sorted(value.rstrip(".") for value in expected)
+    else:
+        expected_clean = sorted(value.rstrip(".").lower() for value in expected)
+
+    # Test with system resolver (what user experiences)
+    actual_system = resolve_records(fqdn, record_type, use_cloudflare_dns=False)
+    actual_system_clean = sorted(value.lower() for value in actual_system) if not case_sensitive else sorted(actual_system)
+
+    # Test with Cloudflare DNS (authoritative)
+    actual_cf = resolve_records(fqdn, record_type, use_cloudflare_dns=True)
+    actual_cf_clean = sorted(value.lower() for value in actual_cf) if not case_sensitive else sorted(actual_cf)
+
+    system_ok = actual_system_clean == expected_clean
+    cf_ok = actual_cf_clean == expected_clean
+
+    # If both match, all good
+    if system_ok and cf_ok:
+        detail = f"{fqdn} {record_type}: expected {expected_clean}, observed {actual_system_clean}"
+        results.append(CheckResult(expectation=expectation, ok=True, details=detail))
+    # If Cloudflare matches but system doesn't, it's a local cache issue
+    elif cf_ok and not system_ok:
+        detail = (
+            f"{fqdn} {record_type}: Cloudflare DNS shows correct values {actual_cf_clean}, "
+            f"but system resolver shows {actual_system_clean}. This is likely a local DNS cache issue. "
+            f"Try: sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
+        )
+        results.append(CheckResult(expectation=expectation + " (local cache issue detected)", ok=False, details=detail))
+    # If neither matches, it's a real configuration problem
+    else:
+        detail = (
+            f"{fqdn} {record_type}: expected {expected_clean}, "
+            f"observed via system resolver: {actual_system_clean}, "
+            f"via Cloudflare DNS: {actual_cf_clean}"
+        )
+        results.append(CheckResult(expectation=expectation, ok=False, details=detail))
 
 
 def check_nameservers(domain: str, expected: Sequence[str], results: List[CheckResult]) -> None:
@@ -124,12 +157,35 @@ def check_nameservers(domain: str, expected: Sequence[str], results: List[CheckR
     )
 
 
-def check_apex(domain: str, apex_records: Dict, results: List[CheckResult]) -> None:
+def check_apex(
+    domain: str,
+    apex_records: Dict,
+    gmail_enabled: bool,
+    google_workspace_outputs: Dict,
+    results: List[CheckResult]
+) -> None:
     for record_type in ("a", "txt", "mx"):
         entries = apex_records.get(record_type, [])
-        if not entries:
-            continue
         expected_values = [entry["value"] for entry in entries]
+
+        # If gmail is enabled, add Google Workspace managed records to expected values
+        if gmail_enabled:
+            if record_type == "txt":
+                # Add SPF from Google Workspace
+                expected_values.append("v=spf1 include:_spf.google.com ~all")
+            elif record_type == "mx":
+                # Google Workspace creates MX records, include them
+                expected_values.extend([
+                    "aspmx.l.google.com",
+                    "alt1.aspmx.l.google.com",
+                    "alt2.aspmx.l.google.com",
+                    "alt3.aspmx.l.google.com",
+                    "alt4.aspmx.l.google.com",
+                ])
+
+        if not expected_values:
+            continue
+
         expectation = f"Asserts apex {record_type.upper()} records for {domain} match configuration"
         compare_records(domain, record_type, expected_values, results, expectation)
 
@@ -151,21 +207,19 @@ def check_subdomains(
 
 
 def http_status(url: str, timeout: int = DEFAULT_TIMEOUT) -> Tuple[bool, str]:
-    req = urllib.request.Request(
-        url,
-        method="GET",
-        headers={"User-Agent": "cloudflare-management-verifier/1.0"},
-    )
-    context = ssl.create_default_context()
+    headers = {"User-Agent": "cloudflare-management-verifier/1.0"}
     try:
-        with urllib.request.urlopen(req, context=context, timeout=timeout) as resp:
-            status = resp.status
-            ok = 200 <= status < 400
-            return ok, f"{status} {resp.reason}"
-    except urllib.error.HTTPError as err:
-        return False, f"{err.code} {err.reason}"
-    except urllib.error.URLError as err:
-        return False, str(err.reason)
+        resp = requests.get(url, headers=headers, timeout=timeout, allow_redirects=True)
+        ok = 200 <= resp.status_code < 400
+        return ok, f"{resp.status_code} {resp.reason}"
+    except requests.exceptions.SSLError as err:
+        return False, f"SSL Error: {err}"
+    except requests.exceptions.ConnectionError as err:
+        return False, f"Connection Error: {err}"
+    except requests.exceptions.Timeout as err:
+        return False, f"Timeout: {err}"
+    except requests.exceptions.RequestException as err:
+        return False, f"Request Error: {err}"
 
 
 def check_pages_projects(
@@ -268,11 +322,19 @@ def main() -> int:
     apex_records = tfvars_data.get("apex_records", {})
     subdomain_records = tfvars_data.get("subdomain_records", {})
     pages_projects = tfvars_data.get("pages_projects", {})
+    gmail_enabled = tfvars_data.get("gmail_enabled", False)
+
     pages_outputs_meta = outputs.get("pages_projects") or {}
     if isinstance(pages_outputs_meta, dict):
         pages_projects_outputs = pages_outputs_meta.get("value", {})
     else:
         pages_projects_outputs = {}
+
+    google_workspace_outputs_meta = outputs.get("google_workspace_record_ids") or {}
+    if isinstance(google_workspace_outputs_meta, dict):
+        google_workspace_outputs = google_workspace_outputs_meta.get("value", {})
+    else:
+        google_workspace_outputs = {}
 
     name_servers = outputs.get("name_servers", {}).get("value", [])
 
@@ -288,7 +350,7 @@ def main() -> int:
             )
         )
 
-    check_apex(domain, apex_records, results)
+    check_apex(domain, apex_records, gmail_enabled, google_workspace_outputs, results)
     check_subdomains(domain, subdomain_records, results)
     check_pages_projects(pages_projects, pages_projects_outputs, results)
 
