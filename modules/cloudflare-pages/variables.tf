@@ -32,6 +32,12 @@ variable "custom_domain" {
   default     = ""
 }
 
+variable "custom_domains" {
+  description = "List of custom domains for the Pages project (use this OR custom_domain, not both)"
+  type        = list(string)
+  default     = []
+}
+
 variable "zone_id" {
   description = "Cloudflare zone ID for DNS record (required if custom_domain is set)"
   type        = string

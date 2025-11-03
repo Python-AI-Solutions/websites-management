@@ -5,12 +5,9 @@ gmail_enabled = false
 google_site_verification = "CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM"
 
 apex_records = {
-  a = [
-    { value = "185.199.108.153", ttl = 86400 },
-    { value = "185.199.109.153", ttl = 86400 },
-    { value = "185.199.110.153", ttl = 86400 },
-    { value = "185.199.111.153", ttl = 86400 },
-  ]
+  # Apex A records removed - now managed by Cloudflare Pages with CNAME flattening
+  # The pythonaisolutions-website Pages project will handle both apex and www
+  a = []
 
   txt = [
     { value = "google-site-verification=CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM", ttl = 3600 },
@@ -45,18 +42,6 @@ subdomain_records = {
   "hih" = {
     a = [
       { value = "35.194.17.231", ttl = 86400 },
-    ]
-  }
-
-  "osm" = {
-    a = [
-      { value = "18.214.163.6", ttl = 86400 },
-    ]
-  }
-
-  "osm-dashboard" = {
-    a = [
-      { value = "18.214.163.6", ttl = 86400 },
     ]
   }
 
@@ -103,9 +88,13 @@ pages_projects = {
     production_branch = "main"
     build_command     = "npm run build"
     destination_dir   = "out"
-    custom_domain     = "www.pythonaisolutions.com"
-    dns_ttl           = 3600
-    dns_proxied       = false
+    # Using custom_domains for both apex and www
+    custom_domains = [
+      "pythonaisolutions.com",
+      "www.pythonaisolutions.com"
+    ]
+    dns_ttl     = 3600
+    dns_proxied = false
   }
 
   "no-strings-resume" = {

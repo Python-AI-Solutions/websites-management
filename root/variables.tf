@@ -186,6 +186,7 @@ variable "pages_projects" {
     build_command       = optional(string, "")
     destination_dir     = optional(string, "")
     custom_domain       = optional(string, "")
+    custom_domains      = optional(list(string), [])
     dns_ttl             = optional(number, 3600)
     dns_proxied         = optional(bool, false)
     production_env_vars = optional(map(string), {})

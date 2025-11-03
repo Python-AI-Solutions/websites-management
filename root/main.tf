@@ -48,6 +48,7 @@ module "pages_projects" {
   build_command       = each.value.build_command
   destination_dir     = each.value.destination_dir
   custom_domain       = each.value.custom_domain
+  custom_domains      = try(each.value.custom_domains, [])
   zone_id             = module.zone.zone_id
   zone_name           = module.zone.zone_name
   dns_ttl             = try(each.value.dns_ttl, 3600)

@@ -30,7 +30,7 @@ resource "cloudflare_pages_project" "this" {
   }
 }
 
-# Custom domain for the Pages project
+# Custom domain for the Pages project (single domain - legacy support)
 resource "cloudflare_pages_domain" "custom_domain" {
   count = var.custom_domain != "" ? 1 : 0
 
@@ -39,7 +39,16 @@ resource "cloudflare_pages_domain" "custom_domain" {
   domain       = var.custom_domain
 }
 
-# DNS CNAME record pointing to Pages project
+# Multiple custom domains for the Pages project
+resource "cloudflare_pages_domain" "custom_domains" {
+  for_each = toset(var.custom_domains)
+
+  account_id   = var.account_id
+  project_name = cloudflare_pages_project.this.name
+  domain       = each.value
+}
+
+# DNS CNAME record pointing to Pages project (single domain - legacy support)
 resource "cloudflare_record" "pages_cname" {
   count = var.custom_domain != "" && var.zone_id != "" ? 1 : 0
 
@@ -49,4 +58,18 @@ resource "cloudflare_record" "pages_cname" {
   content = "${var.project_name}.pages.dev"
   ttl     = var.dns_ttl
   proxied = var.dns_proxied
+}
+
+# DNS records for multiple custom domains
+# For apex domains (no subdomain), use CNAME with proxied = true (Cloudflare will flatten it)
+# For subdomains, use CNAME as normal
+resource "cloudflare_record" "pages_cnames" {
+  for_each = var.zone_id != "" ? toset(var.custom_domains) : []
+
+  zone_id = var.zone_id
+  name    = trimsuffix(each.value, ".${var.zone_name}")
+  type    = "CNAME"
+  content = "${var.project_name}.pages.dev"
+  ttl     = 1  # TTL must be 1 when proxied = true
+  proxied = true  # Enable proxy for CNAME flattening on apex
 }
