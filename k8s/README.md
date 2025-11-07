@@ -69,7 +69,17 @@ tofu apply \
   -var 'host=YOUR_SERVER_IP' \
   -var 'bastion_host=BASTION_IP' \
   -var 'bastion_user=ubuntu' \
+  -var 'bastion_port=22' \
   -var 'bastion_private_key_path=~/.ssh/bastion_key'
+```
+
+**Note:** If using AWS jump proxy on port 7006 (as mentioned in project docs):
+```bash
+tofu apply \
+  -var 'host=YOUR_SERVER_IP' \
+  -var 'bastion_host=AWS_JUMP_HOST' \
+  -var 'bastion_port=7006' \
+  -var 'bastion_user=ubuntu'
 ```
 
 ## Optional: Let's Encrypt Certificate
