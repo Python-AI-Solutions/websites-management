@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "cloudflare-management"
 version = "0.1.0"
 description = "Cloudflare DNS management for pythonaisolutions.com using OpenTofu."
@@ -29,7 +29,13 @@ cmd = "cd root && tflint --init && tflint"
 [tasks.workspace-staging]
 cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
 
+[tasks.ws-staging]
+cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
+
 [tasks.workspace-prod]
+cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
+
+[tasks.ws-prod]
 cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
 
 [tasks.plan-staging]
