@@ -29,21 +29,17 @@ provider "null" {}
 provider "local" {}
 
 # Configure Kubernetes provider after kubeconfig is fetched
+# Note: Provider will skip initialization if config file doesn't exist (e.g., during plan)
 provider "kubernetes" {
-  config_path = var.kubeconfig_local_path
-  
-  # Ensure provider waits for kubeconfig to exist
-  depends_on = [null_resource.fetch_kubeconfig]
+  config_path = fileexists(var.kubeconfig_local_path) ? var.kubeconfig_local_path : null
 }
 
 # Configure Helm provider after kubeconfig is fetched
+# Note: Provider will skip initialization if config file doesn't exist (e.g., during plan)
 provider "helm" {
   kubernetes {
-    config_path = var.kubeconfig_local_path
+    config_path = fileexists(var.kubeconfig_local_path) ? var.kubeconfig_local_path : null
   }
-  
-  # Ensure provider waits for kubeconfig to exist
-  depends_on = [null_resource.fetch_kubeconfig]
 }
 
 # Render kubeadm configuration from template
