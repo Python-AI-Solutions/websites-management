@@ -29,10 +29,16 @@ cmd = "cd root && tflint --init && tflint"
 [tasks.workspace-staging]
 cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
 
+[tasks."workspace:staging"]
+cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
+
 [tasks.ws-staging]
 cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
 
 [tasks.workspace-prod]
+cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
+
+[tasks."workspace:prod"]
 cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
 
 [tasks.ws-prod]
@@ -41,17 +47,35 @@ cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
 [tasks.plan-staging]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan'"
 
+[tasks."plan:staging"]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan'"
+
 [tasks.plan-prod]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
+
+[tasks."plan:prod"]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
 
 [tasks.apply-staging]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
 
+[tasks."apply:staging"]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
+
 [tasks.apply-prod]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
+
+[tasks."apply:prod"]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
 
 [tasks.verify-dns]
 cmd = "python scripts/verify_dns.py"
 
+[tasks."verify:dns"]
+cmd = "python scripts/verify_dns.py"
+
 [tasks.analyze-sites]
+cmd = "bash scripts/analyze-sites.sh"
+
+[tasks."analyze:sites"]
 cmd = "bash scripts/analyze-sites.sh"
