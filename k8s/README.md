@@ -127,13 +127,22 @@ kubectl -n traefik port-forward deploy/traefik 9000:9000
 # Access at http://localhost:9000/dashboard/
 ```
 
-## Remote State (Future)
+## Remote State (Optional - Recommended for Teams)
 
-Currently uses local backend. To migrate to remote state:
+Currently uses local backend (suitable for single-user testing).
 
-1. Create a GCS bucket or S3 bucket for state storage
-2. Update `main.tf` backend configuration
-3. Run `tofu init -migrate-state`
+For team collaboration, migrate to remote state:
+
+**Quick Setup:**
+```bash
+cd remote-state-setup
+# Follow instructions in README.md
+```
+
+**Full Details:** See `OPTIONAL_FEATURES.md` for:
+- Remote state backend setup (GCS or S3)
+- Join command generation (for multi-node clusters)
+- Other optional enhancements
 
 ## Troubleshooting
 

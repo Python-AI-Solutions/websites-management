@@ -21,6 +21,12 @@ kubeconfig
 *.kubeconfig
 k8s/kubeconfig
 k8s/tmp-*
+k8s/join-command.txt
+
+# Remote state setup (bootstrap)
+k8s/remote-state-setup/terraform.tfstate
+k8s/remote-state-setup/terraform.tfstate.backup
+k8s/remote-state-setup/.terraform/
 
 # Python
 __pycache__/
