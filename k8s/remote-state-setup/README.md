@@ -13,7 +13,7 @@ Creates a GCS bucket (or S3 bucket) to store Terraform state remotely for collab
 ```bash
 cd remote-state-setup
 tofu init
-tofu apply -var 'project_id=YOUR_GCP_PROJECT_ID'
+tofu apply -var 'project_id=midyear-pattern-470017-b8'
 
 # Note the bucket name from output
 # Then update ../main.tf backend configuration
@@ -33,6 +33,4 @@ tofu apply -var 'bucket_name=k8s-tfstate-UNIQUE_NAME'
 ## After Creation
 
 1. Update `../main.tf` backend block
-2. Run `tofu init -migrate-state` in parent directory
-3. Confirm state migration
-4. Delete local `terraform.tfstate` files
+2. Run `tofu init` in parent directory
