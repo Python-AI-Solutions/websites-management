@@ -1,6 +1,6 @@
 terraform {
   required_version = ">= 1.5.0"
-  
+
   required_providers {
     null = {
       source  = "hashicorp/null"
@@ -19,9 +19,12 @@ terraform {
       version = "~> 2.11"
     }
   }
-  
-  # Start with local backend, will migrate to remote (GCS/S3) later
-  backend "local" {}
+
+  # Remote state stored in GCS bucket
+  backend "gcs" {
+    bucket = "k8s-tfstate-midyear-pattern-470017-b8"
+    prefix = "k8s-cluster/terraform.tfstate"
+  }
 }
 
 # Provider configurations
@@ -51,19 +54,19 @@ locals {
     service_cidr          = var.service_cidr
     control_plane_endpoint = var.control_plane_endpoint
   })
-  
+
   # SSH connection settings
+  # Use SSH agent instead of reading key files directly (works with passphrase-protected keys)
   ssh_connection = {
-    type        = "ssh"
-    user        = var.ssh_user
-    private_key = file(var.ssh_private_key_path)
-    host        = var.host
-    
+    type  = "ssh"
+    user  = var.ssh_user
+    host  = var.host
+    agent = true  # Use SSH agent for authentication
+
     # Add bastion configuration if provided
-    bastion_host        = var.bastion_host != "" ? var.bastion_host : null
-    bastion_user        = var.bastion_user != "" ? var.bastion_user : null
-    bastion_port        = var.bastion_host != "" ? var.bastion_port : null
-    bastion_private_key = var.bastion_private_key_path != "" ? file(var.bastion_private_key_path) : null
+    bastion_host = var.bastion_host != "" ? var.bastion_host : null
+    bastion_user = var.bastion_user != "" ? var.bastion_user : null
+    bastion_port = var.bastion_host != "" ? var.bastion_port : null
   }
 }
 
@@ -78,20 +81,19 @@ resource "null_resource" "k8s_host_prep" {
   triggers = {
     kubernetes_version = var.kubernetes_version
   }
-  
+
   connection {
-    type        = local.ssh_connection.type
-    user        = local.ssh_connection.user
-    private_key = local.ssh_connection.private_key
-    host        = local.ssh_connection.host
-    
+    type  = local.ssh_connection.type
+    user  = local.ssh_connection.user
+    host  = local.ssh_connection.host
+    agent = local.ssh_connection.agent
+
     # Bastion settings (optional)
-    bastion_host        = local.ssh_connection.bastion_host
-    bastion_user        = local.ssh_connection.bastion_user
-    bastion_port        = local.ssh_connection.bastion_port
-    bastion_private_key = local.ssh_connection.bastion_private_key
+    bastion_host = local.ssh_connection.bastion_host
+    bastion_user = local.ssh_connection.bastion_user
+    bastion_port = local.ssh_connection.bastion_port
   }
-  
+
   # Disable swap
   provisioner "remote-exec" {
     inline = [
@@ -100,7 +102,7 @@ resource "null_resource" "k8s_host_prep" {
       "sudo sed -i.bak -r 's/^(.*swap.*)$/#\\1/' /etc/fstab || true"
     ]
   }
-  
+
   # Configure kernel modules and sysctl
   provisioner "remote-exec" {
     inline = [
@@ -117,7 +119,7 @@ resource "null_resource" "k8s_host_prep" {
       "sudo sysctl --system"
     ]
   }
-  
+
   # Install containerd
   provisioner "remote-exec" {
     inline = [
@@ -135,7 +137,7 @@ resource "null_resource" "k8s_host_prep" {
       "sudo systemctl enable containerd"
     ]
   }
-  
+
   # Install Kubernetes components
   provisioner "remote-exec" {
     inline = [
@@ -160,24 +162,23 @@ resource "null_resource" "upload_kubeadm_config" {
   triggers = {
     config_content = local.kubeadm_config
   }
-  
+
   depends_on = [
     null_resource.k8s_host_prep,
     local_file.kubeadm_config
   ]
-  
+
   connection {
     type        = local.ssh_connection.type
     user        = local.ssh_connection.user
-    private_key = local.ssh_connection.private_key
+    agent = local.ssh_connection.agent
     host        = local.ssh_connection.host
-    
-    bastion_host        = local.ssh_connection.bastion_host
-    bastion_user        = local.ssh_connection.bastion_user
-    bastion_port        = local.ssh_connection.bastion_port
-    bastion_private_key = local.ssh_connection.bastion_private_key
+
+    bastion_host = local.ssh_connection.bastion_host
+    bastion_user = local.ssh_connection.bastion_user
+    bastion_port = local.ssh_connection.bastion_port
   }
-  
+
   provisioner "file" {
     source      = local_file.kubeadm_config.filename
     destination = "/tmp/kubeadm-config.yaml"
@@ -189,21 +190,20 @@ resource "null_resource" "k8s_init" {
   triggers = {
     cluster_name = var.cluster_name
   }
-  
+
   depends_on = [null_resource.upload_kubeadm_config]
-  
+
   connection {
     type        = local.ssh_connection.type
     user        = local.ssh_connection.user
-    private_key = local.ssh_connection.private_key
+    agent = local.ssh_connection.agent
     host        = local.ssh_connection.host
-    
-    bastion_host        = local.ssh_connection.bastion_host
-    bastion_user        = local.ssh_connection.bastion_user
-    bastion_port        = local.ssh_connection.bastion_port
-    bastion_private_key = local.ssh_connection.bastion_private_key
+
+    bastion_host = local.ssh_connection.bastion_host
+    bastion_user = local.ssh_connection.bastion_user
+    bastion_port = local.ssh_connection.bastion_port
   }
-  
+
   # Initialize cluster if not already initialized
   provisioner "remote-exec" {
     inline = [
@@ -225,36 +225,36 @@ resource "null_resource" "fetch_kubeconfig" {
   triggers = {
     cluster_init = null_resource.k8s_init.id
   }
-  
+
   depends_on = [null_resource.k8s_init]
-  
+
   # Copy admin.conf to temp location with user permissions
   provisioner "remote-exec" {
     connection {
-      type        = local.ssh_connection.type
-      user        = local.ssh_connection.user
-      private_key = local.ssh_connection.private_key
-      host        = local.ssh_connection.host
-      
-      bastion_host        = local.ssh_connection.bastion_host
-      bastion_user        = local.ssh_connection.bastion_user
-      bastion_port        = local.ssh_connection.bastion_port
-      bastion_private_key = local.ssh_connection.bastion_private_key
+      type  = local.ssh_connection.type
+      user  = local.ssh_connection.user
+      agent = local.ssh_connection.agent
+      host  = local.ssh_connection.host
+
+      bastion_host = local.ssh_connection.bastion_host
+      bastion_user = local.ssh_connection.bastion_user
+      bastion_port = local.ssh_connection.bastion_port
     }
-    
+
     inline = [
       "set -euxo pipefail",
       "sudo cp /etc/kubernetes/admin.conf /tmp/kubeconfig",
       "sudo chmod 644 /tmp/kubeconfig"
     ]
   }
-  
+
   # Fetch kubeconfig using local-exec with scp
+  # Uses SSH agent for authentication (no -i flag needed)
   provisioner "local-exec" {
     command = var.bastion_host != "" ? (
-      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.ssh_private_key_path} -o ProxyCommand='ssh -W %h:%p -i ${var.bastion_private_key_path != "" ? var.bastion_private_key_path : var.ssh_private_key_path} ${var.bastion_user}@${var.bastion_host} -p ${var.bastion_port}' ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
+      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand='ssh -W %h:%p ${var.bastion_user}@${var.bastion_host} -p ${var.bastion_port}' ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
     ) : (
-      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.ssh_private_key_path} ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
+      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
     )
   }
 }
@@ -264,7 +264,7 @@ resource "kubernetes_namespace" "traefik" {
   metadata {
     name = "traefik"
   }
-  
+
   depends_on = [null_resource.fetch_kubeconfig]
 }
 
@@ -272,7 +272,7 @@ resource "kubernetes_namespace" "cert_manager" {
   metadata {
     name = "cert-manager"
   }
-  
+
   depends_on = [null_resource.fetch_kubeconfig]
 }
 
@@ -280,7 +280,7 @@ resource "kubernetes_namespace" "local_path_storage" {
   metadata {
     name = "local-path-storage"
   }
-  
+
   depends_on = [null_resource.fetch_kubeconfig]
 }
 
@@ -291,7 +291,7 @@ resource "helm_release" "cilium" {
   chart      = "cilium"
   namespace  = "kube-system"
   version    = var.cilium_chart_version
-  
+
   values = [<<-EOF
     kubeProxyReplacement: "strict"
     ipam:
@@ -300,10 +300,10 @@ resource "helm_release" "cilium" {
     k8sServicePort: 6443
   EOF
   ]
-  
+
   timeout = 600
   wait    = true
-  
+
   depends_on = [null_resource.fetch_kubeconfig]
 }
 
@@ -315,7 +315,7 @@ resource "helm_release" "traefik" {
   namespace        = kubernetes_namespace.traefik.metadata[0].name
   version          = var.traefik_chart_version
   create_namespace = false
-  
+
   values = [<<-EOF
     ports:
       web:
@@ -332,10 +332,10 @@ resource "helm_release" "traefik" {
         enabled: true
   EOF
   ]
-  
+
   timeout = 300
   wait    = true
-  
+
   depends_on = [
     helm_release.cilium,
     kubernetes_namespace.traefik
@@ -350,7 +350,7 @@ resource "helm_release" "cert_manager" {
   namespace        = kubernetes_namespace.cert_manager.metadata[0].name
   version          = var.cert_manager_chart_version
   create_namespace = false
-  
+
   values = [<<-EOF
     installCRDs: true
     global:
@@ -358,10 +358,10 @@ resource "helm_release" "cert_manager" {
         namespace: cert-manager
   EOF
   ]
-  
+
   timeout = 300
   wait    = true
-  
+
   depends_on = [
     helm_release.traefik,
     kubernetes_namespace.cert_manager
@@ -376,17 +376,17 @@ resource "helm_release" "local_path_provisioner" {
   namespace        = kubernetes_namespace.local_path_storage.metadata[0].name
   version          = var.local_path_provisioner_chart_version
   create_namespace = false
-  
+
   values = [<<-EOF
     storageClass:
       defaultClass: true
       name: local-path
   EOF
   ]
-  
+
   timeout = 300
   wait    = true
-  
+
   depends_on = [
     helm_release.cert_manager,
     kubernetes_namespace.local_path_storage
@@ -396,7 +396,7 @@ resource "helm_release" "local_path_provisioner" {
 # Optional: Create Let's Encrypt ClusterIssuer (only if email provided)
 resource "kubernetes_manifest" "letsencrypt_issuer" {
   count = var.acme_email != "" ? 1 : 0
-  
+
   manifest = {
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -420,6 +420,6 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
       }
     }
   }
-  
+
   depends_on = [helm_release.cert_manager]
 }

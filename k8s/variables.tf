@@ -1,4 +1,5 @@
 # SSH / Host Configuration
+# Authentication uses SSH agent only - ensure keys are loaded with ssh-add
 variable "host" {
   description = "Remote Debian host IP or DNS name"
   type        = string
@@ -8,12 +9,6 @@ variable "ssh_user" {
   description = "SSH username for remote host"
   type        = string
   default     = "sysadmin"
-}
-
-variable "ssh_private_key_path" {
-  description = "Path to SSH private key for authentication"
-  type        = string
-  default     = "~/.ssh/id_ed25519"
 }
 
 # Optional Bastion/Jump Host Configuration
@@ -33,12 +28,6 @@ variable "bastion_port" {
   description = "Port for bastion host"
   type        = number
   default     = 22
-}
-
-variable "bastion_private_key_path" {
-  description = "Path to private key for bastion host"
-  type        = string
-  default     = ""
 }
 
 # Kubernetes Cluster Configuration

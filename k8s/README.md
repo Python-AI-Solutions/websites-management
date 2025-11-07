@@ -8,6 +8,23 @@ This OpenTofu/Terraform stack bootstraps a single-node Kubernetes cluster on a r
 - OpenTofu ≥ 1.5.0 (or Terraform ≥ 1.0)
 - `kubectl` installed locally
 - Outbound internet connectivity from the target host
+- **SSH agent running with keys loaded** (for authentication)
+
+### SSH Agent Setup
+
+This configuration uses SSH agent for authentication (supports passphrase-protected keys):
+
+```bash
+# Verify SSH agent is running
+ssh-add -L
+
+# If no keys are listed, add them:
+ssh-add ~/.ssh/id_rsa           # Your main key
+ssh-add ~/.ssh/jumpproxy        # Your bastion key (if using)
+
+# Verify keys are loaded
+ssh-add -L
+```
 
 ## Components Installed
 
@@ -20,16 +37,41 @@ This OpenTofu/Terraform stack bootstraps a single-node Kubernetes cluster on a r
 
 ## Quick Start
 
+**⚠️ Important:** SSH keys MUST be loaded in the agent before running (see Prerequisites above).
+
+### Step 1: Generate Configuration
+
+Use the helper script if you have an SSH config entry:
+
 ```bash
 cd k8s
 tofu init
-tofu apply \
-  -var 'host=YOUR_SERVER_IP' \
-  -var 'ssh_user=sysadmin' \
-  -var 'ssh_private_key_path=~/.ssh/id_ed25519' \
-  -var 'cluster_name=xps'
 
-# After successful apply:
+# Ensure SSH keys are loaded
+ssh-add -L  # Verify keys are present
+
+# Generate k8s.tfvars from your SSH config
+./ssh-config-helper.sh k8s-host
+
+# Review k8s.tfvars if needed
+```
+
+Or manually create `k8s.tfvars`:
+
+```bash
+cp k8s.tfvars.example k8s.tfvars
+# Edit with your values
+```
+
+### Step 2: Apply
+
+```bash
+tofu apply -var-file=k8s.tfvars
+```
+
+### After Successful Apply
+
+```bash
 export KUBECONFIG=$(pwd)/kubeconfig
 kubectl get nodes -o wide
 kubectl get pods -A
@@ -46,11 +88,12 @@ kubectl get storageclass
 
 ## Variables
 
+**Note:** Authentication uses SSH agent only. No key path variables are needed.
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `host` | Remote host IP/DNS (required) | - |
 | `ssh_user` | SSH username | `sysadmin` |
-| `ssh_private_key_path` | Path to SSH private key | `~/.ssh/id_ed25519` |
 | `cluster_name` | Kubernetes cluster name | `xps-cluster` |
 | `kubernetes_version` | Kubernetes version | `1.30.5` |
 | `pod_cidr` | Pod network CIDR | `10.244.0.0/16` |
@@ -59,27 +102,30 @@ kubectl get storageclass
 | `traefik_chart_version` | Traefik Helm chart version | `32.1.0` |
 | `cert_manager_chart_version` | cert-manager Helm chart version | `v1.16.1` |
 | `local_path_provisioner_chart_version` | local-path-provisioner version | `0.0.28` |
+| `bastion_host` | Bastion/jump host (optional) | `""` |
+| `bastion_user` | Bastion username (optional) | `""` |
+| `bastion_port` | Bastion port (optional) | `22` |
 
 ## Bastion/Jump Host
 
-If your host requires access through a bastion:
+If your host requires access through a bastion/jump host:
 
-```bash
-tofu apply \
-  -var 'host=YOUR_SERVER_IP' \
-  -var 'bastion_host=BASTION_IP' \
-  -var 'bastion_user=ubuntu' \
-  -var 'bastion_port=22' \
-  -var 'bastion_private_key_path=~/.ssh/bastion_key'
+**Auto-detect from SSH Config (Recommended):**
+
+The `ssh-config-helper.sh` script automatically detects bastion settings from your SSH config's `ProxyCommand`.
+
+**Manual Configuration:**
+
+Add these variables to your `k8s.tfvars`:
+```hcl
+bastion_host = "jump.example.com"
+bastion_user = "ubuntu"
+bastion_port = 22
 ```
 
-**Note:** If using AWS jump proxy on port 7006 (as mentioned in project docs):
+**Important:** Ensure the bastion SSH key is loaded in your agent:
 ```bash
-tofu apply \
-  -var 'host=YOUR_SERVER_IP' \
-  -var 'bastion_host=AWS_JUMP_HOST' \
-  -var 'bastion_port=7006' \
-  -var 'bastion_user=ubuntu'
+ssh-add ~/.ssh/your_bastion_key
 ```
 
 ## Optional: Let's Encrypt Certificate
