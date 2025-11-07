@@ -98,7 +98,7 @@ README.md (concise)
 - Prereqs: SSH to host, outbound internet
 - Quickstart:
 
-cd infra
+cd k8s
 tofu init
 tofu apply \
   -var 'host=YOUR_SERVER_IP' \
