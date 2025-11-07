@@ -61,6 +61,7 @@ locals {
     type  = "ssh"
     user  = var.ssh_user
     host  = var.host
+    port  = var.host_port
     agent = true  # Use SSH agent for authentication
 
     # Add bastion configuration if provided
@@ -86,6 +87,7 @@ resource "null_resource" "k8s_host_prep" {
     type  = local.ssh_connection.type
     user  = local.ssh_connection.user
     host  = local.ssh_connection.host
+    port  = local.ssh_connection.port
     agent = local.ssh_connection.agent
 
     # Bastion settings (optional)
@@ -173,6 +175,7 @@ resource "null_resource" "upload_kubeadm_config" {
     user        = local.ssh_connection.user
     agent = local.ssh_connection.agent
     host        = local.ssh_connection.host
+    port        = local.ssh_connection.port
 
     bastion_host = local.ssh_connection.bastion_host
     bastion_user = local.ssh_connection.bastion_user
@@ -198,6 +201,7 @@ resource "null_resource" "k8s_init" {
     user        = local.ssh_connection.user
     agent = local.ssh_connection.agent
     host        = local.ssh_connection.host
+    port        = local.ssh_connection.port
 
     bastion_host = local.ssh_connection.bastion_host
     bastion_user = local.ssh_connection.bastion_user
@@ -235,6 +239,7 @@ resource "null_resource" "fetch_kubeconfig" {
       user  = local.ssh_connection.user
       agent = local.ssh_connection.agent
       host  = local.ssh_connection.host
+      port  = local.ssh_connection.port
 
       bastion_host = local.ssh_connection.bastion_host
       bastion_user = local.ssh_connection.bastion_user
@@ -252,9 +257,9 @@ resource "null_resource" "fetch_kubeconfig" {
   # Uses SSH agent for authentication (no -i flag needed)
   provisioner "local-exec" {
     command = var.bastion_host != "" ? (
-      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand='ssh -W %h:%p ${var.bastion_user}@${var.bastion_host} -p ${var.bastion_port}' ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
+      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand='ssh -W %h:%p ${var.bastion_user}@${var.bastion_host} -p ${var.bastion_port}' -P ${var.host_port} ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
     ) : (
-      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
+      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${var.host_port} ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
     )
   }
 }

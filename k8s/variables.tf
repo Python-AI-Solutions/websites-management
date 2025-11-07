@@ -5,6 +5,12 @@ variable "host" {
   type        = string
 }
 
+variable "host_port" {
+  description = "SSH port for the remote host"
+  type        = number
+  default     = 22
+}
+
 variable "ssh_user" {
   description = "SSH username for remote host"
   type        = string

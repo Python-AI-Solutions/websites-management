@@ -26,6 +26,11 @@ TARGET_PORT=$(get_ssh_config "port")
 SSH_USER=$(get_ssh_config "user")
 IDENTITY_FILE=$(get_ssh_config "identityfile")
 
+# Default to port 22 if not specified
+if [ -z "$TARGET_PORT" ]; then
+    TARGET_PORT=22
+fi
+
 # Expand ~ in identity file path
 IDENTITY_FILE="${IDENTITY_FILE/#\~/$HOME}"
 
@@ -36,6 +41,7 @@ PROXY_COMMAND=$(ssh -G "$SSH_ALIAS" 2>/dev/null | grep -i "^proxycommand " | cut
 BASTION_HOST=""
 BASTION_USER=""
 BASTION_KEY=""
+BASTION_PORT=""
 if [ -n "$PROXY_COMMAND" ]; then
     # Try to extract bastion host from ProxyCommand
     # Handles formats like: ssh -W %h:%p user@host
@@ -56,6 +62,11 @@ if [ -n "$PROXY_COMMAND" ]; then
         else
             BASTION_KEY="$IDENTITY_FILE"
         fi
+
+        # Try to extract bastion port from ProxyCommand (-p <port>)
+        if [[ "$PROXY_COMMAND" =~ -p[[:space:]]*([0-9]+) ]]; then
+            BASTION_PORT="${BASH_REMATCH[1]}"
+        fi
     fi
 
     # Also check if ProxyCommand uses another SSH alias
@@ -64,6 +75,7 @@ if [ -n "$PROXY_COMMAND" ]; then
         # Query the jump alias directly
         BASTION_HOST=$(ssh -G "$JUMP_ALIAS" 2>/dev/null | grep -i "^hostname " | awk '{print $2}' | head -n1 || echo "$JUMP_ALIAS")
         BASTION_USER=$(ssh -G "$JUMP_ALIAS" 2>/dev/null | grep -i "^user " | awk '{print $2}' | head -n1 || echo "$SSH_USER")
+        BASTION_PORT=$(ssh -G "$JUMP_ALIAS" 2>/dev/null | grep -i "^port " | awk '{print $2}' | head -n1 || echo "22")
         # Get all identity files and prefer non-default ones
         BASTION_KEY_TMP=$(ssh -G "$JUMP_ALIAS" 2>/dev/null | grep -i "^identityfile " | awk '{print $2}' | grep -v -E '(id_rsa|id_dsa|id_ecdsa|id_ed25519)$' | head -n1)
         # If no non-default found, use the first one
@@ -72,6 +84,11 @@ if [ -n "$PROXY_COMMAND" ]; then
         fi
         BASTION_KEY="${BASTION_KEY_TMP/#\~/$HOME}"
     fi
+fi
+
+# Ensure bastion port defaults to 22 if still empty
+if [ -n "$BASTION_HOST" ] && [ -z "$BASTION_PORT" ]; then
+    BASTION_PORT=22
 fi
 
 # Generate k8s.tfvars
@@ -85,6 +102,7 @@ cat > "$OUTPUT_FILE" << EOF
 
 # SSH Configuration
 host                    = "$TARGET_HOST"
+host_port               = $TARGET_PORT
 ssh_user                = "$SSH_USER"
 
 # Cluster Configuration
@@ -99,7 +117,7 @@ if [ -n "$BASTION_HOST" ]; then
 # Make sure bastion key is loaded: ssh-add $BASTION_KEY
 bastion_host            = "$BASTION_HOST"
 bastion_user            = "$BASTION_USER"
-bastion_port            = 22
+bastion_port            = $BASTION_PORT
 
 EOF
 else
