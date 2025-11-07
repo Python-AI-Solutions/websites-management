@@ -65,7 +65,22 @@ cp k8s.tfvars.example k8s.tfvars
 
 ### Step 2: Apply
 
+**Simple way (recommended):**
 ```bash
+./apply.sh
+```
+
+This wrapper script automatically:
+- Syncs custom known_hosts entries (if using `~/.ssh/known_hosts.paijump`)
+- Checks SSH agent has keys loaded
+- Runs `tofu apply -var-file=k8s.tfvars`
+
+**Manual way:**
+```bash
+# If using custom known_hosts file (e.g., for FRP/localhost conflicts)
+./sync-known-hosts.sh
+
+# Then apply
 tofu apply -var-file=k8s.tfvars
 ```
 
@@ -214,6 +229,45 @@ kubectl -n traefik logs -l app.kubernetes.io/name=traefik
 ```bash
 kubectl -n cert-manager get all
 kubectl get clusterissuer
+```
+
+## Troubleshooting
+
+### SSH Authentication Failures
+
+**Problem:** `SSH authentication failed` or `no supported methods remain`
+
+**Solution:** Ensure SSH keys are loaded in agent:
+```bash
+ssh-add -l  # Check loaded keys
+ssh-add ~/.ssh/id_rsa
+ssh-add ~/.ssh/jumpproxy
+```
+
+### Known Hosts Conflicts (localhost/FRP users)
+
+**Problem:** `REMOTE HOST IDENTIFICATION HAS CHANGED` for localhost
+
+**Why this happens:** If you're using FRP (Fast Reverse Proxy) or multiple jump proxies forwarding to localhost, different services create conflicting host key entries.
+
+**Solution:** Use the wrapper script which handles this automatically:
+```bash
+./apply.sh
+```
+
+Or manually sync your custom known_hosts:
+```bash
+./sync-known-hosts.sh
+tofu apply -var-file=k8s.tfvars
+```
+
+**Manual fix:**
+```bash
+# Remove conflicting entry
+ssh-keygen -R localhost
+
+# Re-accept the host key
+ssh -o StrictHostKeyChecking=accept-new <your-ssh-alias>
 ```
 
 ## Clean Up
