@@ -1,0 +1,29 @@
+# Terraform local files
+
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+
+# Pixi environment
+.pixi/
+
+# OS/editor
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+k8s-admin-key.json
+# Logs
+*.log
+
+# Others
+temp
+pixi.lock
+.ipynb_checkpoints
+mlruns
+weights.pt
+client_secret_*

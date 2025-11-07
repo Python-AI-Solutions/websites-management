@@ -1,0 +1,20 @@
+# GCP Project Configuration
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Bucket Configuration
+bucket_name = "my-unique-bucket-name-12345"  # Must be globally unique
+location    = "US"                           # Multi-region: US, EU, ASIA or specific region
+
+# Service Account Configuration
+service_account_name = "gcs-bucket-admin"    # Name for the admin service account
+
+# Bucket Settings
+force_destroy               = false          # Set to true to allow destroying non-empty buckets
+uniform_bucket_level_access = true           # Recommended for most use cases
+enable_versioning          = false          # Enable object versioning
+enable_lifecycle_rules     = false          # Enable automatic object deletion after 30 days
+
+# Advanced Settings
+# kms_key_name             = null           # Not used - using Google-managed encryption by default
+grant_project_level_access = false          # Set to true for project-wide storage access

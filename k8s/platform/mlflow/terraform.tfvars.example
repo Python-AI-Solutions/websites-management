@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and update as needed.
+
+namespace = "mlflow"
+
+# Authorised Google Workspace domains for MLflow access.
+email_domains = [
+  "example.com"
+]
+
+# If you are bootstrapping a fresh cluster, uncomment the following lines
+# and supply credentials instead of reusing the in-cluster secrets.
+# use_existing_postgres_secret = false
+# postgres_user                = "mlflow"
+# postgres_password            = "changeme"
+# postgres_database            = "mlflow"
+
+# use_existing_oauth2_secret   = false
+# oauth2_client_id             = "123.apps.googleusercontent.com"
+# oauth2_client_secret         = "super-secret"
+# oauth2_cookie_secret         = "32-byte-base64-string"
+# oauth2_desktop_client_id     = "123-desktop.apps.googleusercontent.com"

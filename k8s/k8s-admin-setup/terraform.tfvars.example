@@ -1,0 +1,22 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+# Required: Your GCP Project ID
+project_id = "midyear-pattern-470017-b8"
+
+# Optional: GCP region (defaults to us-central1)
+region = "us-central1"
+
+# Optional: Service account name (defaults to k8s-admin)
+service_account_name = "k8s-admin"
+
+# Optional: Whether to create a custom role with minimal permissions
+enable_custom_role = false
+
+# Optional: Additional IAM roles to assign
+additional_iam_roles = [
+  # "roles/cloudsql.admin",  # If you need Cloud SQL access
+  # "roles/dns.admin",       # If you need DNS management
+]
+
+# Optional: Whether to create service account key (set false for workload identity)
+create_service_account_key = true
