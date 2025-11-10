@@ -298,7 +298,7 @@ resource "helm_release" "cilium" {
   version    = var.cilium_chart_version
 
   values = [<<-EOF
-    kubeProxyReplacement: true
+    kubeProxyReplacement: false
     ipam:
       mode: "kubernetes"
     k8sServiceHost: ${var.host}
@@ -306,9 +306,9 @@ resource "helm_release" "cilium" {
   EOF
   ]
 
-  timeout = 600
+  timeout = 900  # 15 minutes for image pulls and CNI setup
   wait    = true
-
+  
   depends_on = [null_resource.fetch_kubeconfig]
 }
 
