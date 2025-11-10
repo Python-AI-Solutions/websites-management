@@ -22,6 +22,12 @@ variable "jump_host_key_name" {
   default     = "pas_jump_proxy"
 }
 
+variable "jump_host_admin_user" {
+  description = "SSH username with sudo access on the jump host."
+  type        = string
+  default     = "newuser"
+}
+
 variable "jump_host_subnet_id" {
   description = "Subnet where the instance currently lives."
   type        = string
@@ -112,4 +118,16 @@ variable "jump_host_eip_tags" {
   default = {
     "nih-vendor" = ""
   }
+}
+
+variable "wireguard_address" {
+  description = "WireGuard interface address (with CIDR) assigned to the jump host."
+  type        = string
+  default     = "10.99.0.1/24"
+}
+
+variable "wireguard_listen_port" {
+  description = "UDP port WireGuard listens on."
+  type        = number
+  default     = 51820
 }
