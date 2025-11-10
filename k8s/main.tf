@@ -298,7 +298,7 @@ resource "helm_release" "cilium" {
   version    = var.cilium_chart_version
 
   values = [<<-EOF
-    kubeProxyReplacement: "strict"
+    kubeProxyReplacement: true
     ipam:
       mode: "kubernetes"
     k8sServiceHost: ${var.host}
