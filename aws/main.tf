@@ -100,11 +100,12 @@ resource "null_resource" "wireguard_server" {
   triggers = {
     wireguard_address     = var.wireguard_address
     wireguard_listen_port = var.wireguard_listen_port
+    wireguard_peers_hash  = sha1(jsonencode(var.wireguard_peers))
     script_hash           = filesha1("${path.module}/scripts/wireguard-bootstrap.sh")
   }
 
   connection {
-    host    = var.jump_host_admin_host
+    host    = aws_eip.jump_host.public_ip
     user    = var.jump_host_admin_user
     agent   = true
     timeout = "5m"
@@ -115,10 +116,15 @@ resource "null_resource" "wireguard_server" {
     destination = "/home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
   }
 
+  provisioner "file" {
+    source      = "${path.module}/data"
+    destination = "/home/${var.jump_host_admin_user}/wireguard-data"
+  }
+
   provisioner "remote-exec" {
     inline = [
       "sudo chmod +x /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh",
-      "sudo WG_ADDRESS='${var.wireguard_address}' WG_PORT='${var.wireguard_listen_port}' /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
+      "sudo WG_ADDRESS='${var.wireguard_address}' WG_PORT='${var.wireguard_listen_port}' WG_PEERS_B64='${base64encode(jsonencode(var.wireguard_peers))}' /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
     ]
   }
 }

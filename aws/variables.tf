@@ -28,12 +28,6 @@ variable "jump_host_admin_user" {
   default     = "admin"
 }
 
-variable "jump_host_admin_host" {
-  description = "SSH config alias (or hostname) that Terraform should use for admin actions."
-  type        = string
-  default     = "bastion-admin"
-}
-
 variable "jump_host_subnet_id" {
   description = "Subnet where the instance currently lives."
   type        = string
@@ -136,4 +130,16 @@ variable "wireguard_listen_port" {
   description = "UDP port WireGuard listens on."
   type        = number
   default     = 51820
+}
+
+variable "wireguard_peers" {
+  description = "List of WireGuard peers (public keys and allowed IPs) to configure on the server."
+  type = list(object({
+    name                = optional(string)
+    public_key          = string
+    allowed_ips         = list(string)
+    persistent_keepalive = optional(number, 25)
+    endpoint             = optional(string)
+  }))
+  default = []
 }
