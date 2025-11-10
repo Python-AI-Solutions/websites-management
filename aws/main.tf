@@ -104,7 +104,7 @@ resource "null_resource" "wireguard_server" {
   }
 
   connection {
-    host    = aws_eip.jump_host.public_ip
+    host    = var.jump_host_admin_host
     user    = var.jump_host_admin_user
     agent   = true
     timeout = "5m"
@@ -112,13 +112,13 @@ resource "null_resource" "wireguard_server" {
 
   provisioner "file" {
     source      = "${path.module}/scripts/wireguard-bootstrap.sh"
-    destination = "/tmp/wireguard-bootstrap.sh"
+    destination = "/home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "sudo chmod +x /tmp/wireguard-bootstrap.sh",
-      "sudo WG_ADDRESS='${var.wireguard_address}' WG_PORT='${var.wireguard_listen_port}' /tmp/wireguard-bootstrap.sh"
+      "sudo chmod +x /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh",
+      "sudo WG_ADDRESS='${var.wireguard_address}' WG_PORT='${var.wireguard_listen_port}' /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
     ]
   }
 }

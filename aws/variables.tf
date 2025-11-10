@@ -25,7 +25,13 @@ variable "jump_host_key_name" {
 variable "jump_host_admin_user" {
   description = "SSH username with sudo access on the jump host."
   type        = string
-  default     = "newuser"
+  default     = "admin"
+}
+
+variable "jump_host_admin_host" {
+  description = "SSH config alias (or hostname) that Terraform should use for admin actions."
+  type        = string
+  default     = "bastion-admin"
 }
 
 variable "jump_host_subnet_id" {
