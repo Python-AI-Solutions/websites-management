@@ -320,11 +320,7 @@ resource "null_resource" "install_addons" {
       "echo 'Installing Cilium CNI...'",
       "sudo helm repo add cilium https://helm.cilium.io 2>/dev/null || true",
       "sudo helm repo update",
-      "export KUBECONFIG=/etc/kubernetes/admin.conf && sudo helm install cilium cilium/cilium --namespace kube-system --version ${var.cilium_chart_version} --wait=false --values - <<EOF",
-      "kubeProxyReplacement: false",
-      "ipam:",
-      "  mode: kubernetes",
-      "EOF",
+      "export KUBECONFIG=/etc/kubernetes/admin.conf && sudo helm install cilium cilium/cilium --namespace kube-system --version ${var.cilium_chart_version} --wait=false --set kubeProxyReplacement=false --set ipam.mode=kubernetes",
       "echo 'Cilium deployed, waiting for CNI initialization (60s)...'",
       "sleep 60",
       "echo 'Checking API server is responding...'",
@@ -339,21 +335,7 @@ resource "null_resource" "install_addons" {
       "echo 'Installing Traefik...'",
       "sudo helm repo add traefik https://traefik.github.io/charts 2>/dev/null || true",
       "sudo helm repo update",
-      "export KUBECONFIG=/etc/kubernetes/admin.conf && sudo helm install traefik traefik/traefik --namespace traefik --version ${var.traefik_chart_version} --wait=false --values - <<EOF",
-      "ports:",
-      "  web:",
-      "    hostPort: 80",
-      "  websecure:",
-      "    hostPort: 443",
-      "deployment:",
-      "  kind: DaemonSet",
-      "ingressClass:",
-      "  enabled: true",
-      "  isDefaultClass: true",
-      "providers:",
-      "  kubernetesIngress:",
-      "    enabled: true",
-      "EOF",
+      "export KUBECONFIG=/etc/kubernetes/admin.conf && sudo helm install traefik traefik/traefik --namespace traefik --version ${var.traefik_chart_version} --wait=false --set ports.web.hostPort=80 --set ports.websecure.hostPort=443 --set deployment.kind=DaemonSet --set ingressClass.enabled=true --set ingressClass.isDefaultClass=true --set providers.kubernetesIngress.enabled=true",
       "echo 'Traefik installed'"
     ]
   }
@@ -377,11 +359,7 @@ resource "null_resource" "install_addons" {
       "echo 'Installing local-path-provisioner...'",
       "sudo helm repo add containeroo https://charts.containeroo.ch 2>/dev/null || true",
       "sudo helm repo update",
-      "export KUBECONFIG=/etc/kubernetes/admin.conf && sudo helm install local-path-provisioner containeroo/local-path-provisioner --namespace local-path-storage --version ${var.local_path_provisioner_chart_version} --wait=false --values - <<EOF",
-      "storageClass:",
-      "  defaultClass: true",
-      "  name: local-path",
-      "EOF",
+      "export KUBECONFIG=/etc/kubernetes/admin.conf && sudo helm install local-path-provisioner containeroo/local-path-provisioner --namespace local-path-storage --version ${var.local_path_provisioner_chart_version} --wait=false --set storageClass.defaultClass=true --set storageClass.name=local-path",
       "echo 'local-path-provisioner installed (background startup)'"
     ]
   }
