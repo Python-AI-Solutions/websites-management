@@ -26,6 +26,7 @@ output "next_steps" {
     kubectl get pods -A
     
     Check addon status:
+    kubectl -n kube-system get deploy cilium-operator
     kubectl -n kube-system get ds cilium
     kubectl -n traefik get deploy traefik
     kubectl -n cert-manager get pods

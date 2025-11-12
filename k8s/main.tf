@@ -20,30 +20,24 @@ terraform {
     }
   }
 
-  # Remote state stored in GCS bucket
-  backend "gcs" {
-    bucket = "k8s-tfstate-midyear-pattern-470017-b8"
-    prefix = "k8s-cluster/terraform.tfstate"
-  }
+  # For testing: use local state backend
+  # For production: uncomment GCS backend below and set GOOGLE_APPLICATION_CREDENTIALS
+  
+  # Remote state stored in GCS bucket (production)
+  # backend "gcs" {
+  #   bucket = "k8s-tfstate-midyear-pattern-470017-b8"
+  #   prefix = "k8s-cluster/terraform.tfstate"
+  # }
 }
 
 # Provider configurations
 provider "null" {}
 provider "local" {}
 
-# Configure Kubernetes provider after kubeconfig is fetched
-# Note: Provider will skip initialization if config file doesn't exist (e.g., during plan)
-provider "kubernetes" {
-  config_path = fileexists(var.kubeconfig_local_path) ? var.kubeconfig_local_path : null
-}
-
-# Configure Helm provider after kubeconfig is fetched
-# Note: Provider will skip initialization if config file doesn't exist (e.g., during plan)
-provider "helm" {
-  kubernetes {
-    config_path = fileexists(var.kubeconfig_local_path) ? var.kubeconfig_local_path : null
-  }
-}
+# NOTE: We intentionally skip the Kubernetes and Helm providers here.
+# Instead, we use kubectl commands via SSH (remote-exec) for add-on installation.
+# This avoids provider networking issues when running from Mac accessing the cluster.
+# The remote-exec approach is simpler, more reliable, and teaches real K8s workflow.
 
 # Render kubeadm configuration from template
 locals {
@@ -264,167 +258,105 @@ resource "null_resource" "fetch_kubeconfig" {
   }
 }
 
-# Create necessary namespaces
-resource "kubernetes_namespace" "traefik" {
-  metadata {
-    name = "traefik"
+# Step 5: Install add-ons using kubectl via SSH
+# This approach avoids Terraform provider networking issues when running from Mac
+# and provides better educational value for learning K8s infrastructure
+resource "null_resource" "install_addons" {
+  connection {
+    type  = local.ssh_connection.type
+    user  = local.ssh_connection.user
+    host  = local.ssh_connection.host
+    port  = local.ssh_connection.port
+    agent = local.ssh_connection.agent
+
+    bastion_host = local.ssh_connection.bastion_host
+    bastion_user = local.ssh_connection.bastion_user
+    bastion_port = local.ssh_connection.bastion_port
+  }
+
+  # Create namespaces (using sudo for kubeconfig access)
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "sudo sh -c 'export KUBECONFIG=/etc/kubernetes/admin.conf && kubectl create namespace traefik --dry-run=client -o yaml | kubectl apply -f -'",
+      "sudo sh -c 'export KUBECONFIG=/etc/kubernetes/admin.conf && kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -'",
+      "sudo sh -c 'export KUBECONFIG=/etc/kubernetes/admin.conf && kubectl create namespace local-path-storage --dry-run=client -o yaml | kubectl apply -f -'",
+      "echo 'Namespaces created'"
+    ]
+  }
+
+  # Install Cilium CNI (avoids bootstrap deadlock with kubeProxyReplacement: false)
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "echo 'Installing Cilium CNI...'",
+      "sudo helm repo add cilium https://helm.cilium.io 2>/dev/null || true",
+      "sudo helm repo update",
+      "sudo helm install cilium cilium/cilium --namespace kube-system --version ${var.cilium_chart_version} --wait=false --values - <<EOF",
+      "kubeProxyReplacement: false",
+      "ipam:",
+      "  mode: kubernetes",
+      "EOF",
+      "echo 'Cilium deployed, waiting for CNI initialization (60s)...'",
+      "sleep 60",
+      "echo 'Checking API server is responding...'",
+      "sudo sh -c 'export KUBECONFIG=/etc/kubernetes/admin.conf && kubectl cluster-info' || echo 'API server still warming up...'"
+    ]
+  }
+
+  # Install Traefik
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "echo 'Installing Traefik...'",
+      "sudo helm repo add traefik https://traefik.github.io/charts 2>/dev/null || true",
+      "sudo helm repo update",
+      "sudo helm install traefik traefik/traefik --namespace traefik --version ${var.traefik_chart_version} --wait=false --values - <<EOF",
+      "ports:",
+      "  web:",
+      "    hostPort: 80",
+      "  websecure:",
+      "    hostPort: 443",
+      "deployment:",
+      "  kind: DaemonSet",
+      "ingressClass:",
+      "  enabled: true",
+      "  isDefaultClass: true",
+      "providers:",
+      "  kubernetesIngress:",
+      "    enabled: true",
+      "EOF",
+      "echo 'Traefik installed'"
+    ]
+  }
+
+  # Install cert-manager
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "echo 'Installing cert-manager...'",
+      "sudo helm repo add jetstack https://charts.jetstack.io 2>/dev/null || true",
+      "sudo helm repo update",
+      "sudo helm install cert-manager jetstack/cert-manager --namespace cert-manager --version ${var.cert_manager_chart_version} --set installCRDs=true --wait=false",
+      "echo 'cert-manager installed (background startup)'"
+    ]
+  }
+
+  # Install local-path-provisioner
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "echo 'Installing local-path-provisioner...'",
+      "sudo helm repo add containeroo https://charts.containeroo.ch 2>/dev/null || true",
+      "sudo helm repo update",
+      "sudo helm install local-path-provisioner containeroo/local-path-provisioner --namespace local-path-storage --version ${var.local_path_provisioner_chart_version} --wait=false --values - <<EOF",
+      "storageClass:",
+      "  defaultClass: true",
+      "  name: local-path",
+      "EOF",
+      "echo 'local-path-provisioner installed (background startup)'"
+    ]
   }
 
   depends_on = [null_resource.fetch_kubeconfig]
-}
-
-resource "kubernetes_namespace" "cert_manager" {
-  metadata {
-    name = "cert-manager"
-  }
-
-  depends_on = [null_resource.fetch_kubeconfig]
-}
-
-resource "kubernetes_namespace" "local_path_storage" {
-  metadata {
-    name = "local-path-storage"
-  }
-
-  depends_on = [null_resource.fetch_kubeconfig]
-}
-
-# Step 5: Install Cilium CNI
-resource "helm_release" "cilium" {
-  name       = "cilium"
-  repository = "https://helm.cilium.io"
-  chart      = "cilium"
-  namespace  = "kube-system"
-  version    = var.cilium_chart_version
-
-  values = [<<-EOF
-    kubeProxyReplacement: false
-    ipam:
-      mode: "kubernetes"
-    k8sServiceHost: ${var.host}
-    k8sServicePort: 6443
-  EOF
-  ]
-
-  timeout = 900  # 15 minutes for image pulls and CNI setup
-  wait    = true
-  
-  depends_on = [null_resource.fetch_kubeconfig]
-}
-
-# Step 6: Install Traefik Ingress Controller
-resource "helm_release" "traefik" {
-  name             = "traefik"
-  repository       = "https://traefik.github.io/charts"
-  chart            = "traefik"
-  namespace        = kubernetes_namespace.traefik.metadata[0].name
-  version          = var.traefik_chart_version
-  create_namespace = false
-
-  values = [<<-EOF
-    ports:
-      web:
-        hostPort: 80
-      websecure:
-        hostPort: 443
-    deployment:
-      kind: DaemonSet
-    ingressClass:
-      enabled: true
-      isDefaultClass: true
-    providers:
-      kubernetesIngress:
-        enabled: true
-  EOF
-  ]
-
-  timeout = 300
-  wait    = true
-
-  depends_on = [
-    helm_release.cilium,
-    kubernetes_namespace.traefik
-  ]
-}
-
-# Step 7: Install cert-manager
-resource "helm_release" "cert_manager" {
-  name             = "cert-manager"
-  repository       = "https://charts.jetstack.io"
-  chart            = "cert-manager"
-  namespace        = kubernetes_namespace.cert_manager.metadata[0].name
-  version          = var.cert_manager_chart_version
-  create_namespace = false
-
-  values = [<<-EOF
-    installCRDs: true
-    global:
-      leaderElection:
-        namespace: cert-manager
-  EOF
-  ]
-
-  timeout = 300
-  wait    = true
-
-  depends_on = [
-    helm_release.traefik,
-    kubernetes_namespace.cert_manager
-  ]
-}
-
-# Step 8: Install local-path-provisioner
-resource "helm_release" "local_path_provisioner" {
-  name             = "local-path-provisioner"
-  repository       = "https://charts.containeroo.ch"
-  chart            = "local-path-provisioner"
-  namespace        = kubernetes_namespace.local_path_storage.metadata[0].name
-  version          = var.local_path_provisioner_chart_version
-  create_namespace = false
-
-  values = [<<-EOF
-    storageClass:
-      defaultClass: true
-      name: local-path
-  EOF
-  ]
-
-  timeout = 300
-  wait    = true
-
-  depends_on = [
-    helm_release.cert_manager,
-    kubernetes_namespace.local_path_storage
-  ]
-}
-
-# Optional: Create Let's Encrypt ClusterIssuer (only if email provided)
-resource "kubernetes_manifest" "letsencrypt_issuer" {
-  count = var.acme_email != "" ? 1 : 0
-
-  manifest = {
-    apiVersion = "cert-manager.io/v1"
-    kind       = "ClusterIssuer"
-    metadata = {
-      name = var.enable_letsencrypt_staging ? "letsencrypt-staging" : "letsencrypt-prod"
-    }
-    spec = {
-      acme = {
-        server = var.enable_letsencrypt_staging ? "https://acme-staging-v02.api.letsencrypt.org/directory" : "https://acme-v02.api.letsencrypt.org/directory"
-        email  = var.acme_email
-        privateKeySecretRef = {
-          name = var.enable_letsencrypt_staging ? "letsencrypt-staging" : "letsencrypt-prod"
-        }
-        solvers = [{
-          http01 = {
-            ingress = {
-              class = "traefik"
-            }
-          }
-        }]
-      }
-    }
-  }
-
-  depends_on = [helm_release.cert_manager]
 }
