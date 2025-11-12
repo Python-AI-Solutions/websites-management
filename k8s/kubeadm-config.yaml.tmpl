@@ -14,6 +14,11 @@ controlPlaneEndpoint: "${control_plane_endpoint}"
 networking:
   podSubnet: ${pod_cidr}
   serviceSubnet: ${service_cidr}
+apiServer:
+  extraArgs:
+    # Increase etcd timeout to avoid race condition during bootstrap
+    # where API server tries to connect before etcd is fully ready
+    etcd-servers-overrides: "--dial-timeout=15s"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration

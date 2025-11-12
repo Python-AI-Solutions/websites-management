@@ -148,7 +148,9 @@ resource "null_resource" "k8s_host_prep" {
       "  K8S_VERSION='${var.kubernetes_version}'",
       "  sudo apt-get install -y kubelet=$${K8S_VERSION}-* kubeadm=$${K8S_VERSION}-* kubectl=$${K8S_VERSION}-*",
       "  sudo apt-mark hold kubelet kubeadm kubectl",
-      "fi"
+      "fi",
+      "sudo rm -rf /etc/cni/net.d/* || true",
+      "sudo kubeadm config images pull --kubernetes-version ${var.kubernetes_version}"
     ]
   }
 }
@@ -217,7 +219,15 @@ resource "null_resource" "k8s_init" {
       "if [ \"$CLUSTER_READY\" -eq 0 ]; then",
       "  echo 'Running kubeadm init to bootstrap control plane...'",
       "  sudo kubeadm reset -f || true",
-      "  sudo kubeadm init --config /tmp/kubeadm-config.yaml --upload-certs --skip-phases=addon/coredns",
+      "  echo 'Phase 1: Initialize etcd first, wait for it to be ready'",
+      "  sudo kubeadm init phase etcd --config /tmp/kubeadm-config.yaml",
+      "  echo 'Waiting 5 seconds for etcd to stabilize...'",
+      "  sleep 5",
+      "  echo 'Phase 2: Initialize API server and other control plane components'",
+      "  sudo kubeadm init phase control-plane --config /tmp/kubeadm-config.yaml --upload-certs",
+      "  echo 'Phase 3: Generate bootstraptoken'",
+      "  sudo kubeadm init phase bootstrap-token --config /tmp/kubeadm-config.yaml",
+      "  echo 'Cluster initialization complete via staged phases'",
       "  mkdir -p $HOME/.kube",
       "  sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config",
       "  sudo chown $(id -u):$(id -g) $HOME/.kube/config",
