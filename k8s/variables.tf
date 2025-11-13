@@ -142,9 +142,7 @@ variable "debian_allowed_ports" {
     { protocol = "tcp", port = 6443, comment = "Kubernetes API" },
     # HTTP/HTTPS (for Traefik ingress)
     { protocol = "tcp", port = 80, comment = "HTTP" },
-    { protocol = "tcp", port = 443, comment = "HTTPS" },
-    # NodePort services range (optional, can be removed if not needed)
-    { protocol = "tcp", port = 30000, comment = "NodePort services start" },
-    { protocol = "tcp", port = 32767, comment = "NodePort services end" }
+    { protocol = "tcp", port = 443, comment = "HTTPS" }
+    # Note: NodePort range (30000-32767) is handled separately in firewall rules
   ]
 }

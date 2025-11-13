@@ -158,7 +158,13 @@ resource "null_resource" "k8s_host_prep" {
 # Step 1.5: Setup WireGuard on Debian host
 resource "null_resource" "wireguard_setup" {
   triggers = {
-    always_run = timestamp()  # Always run to ensure WireGuard is configured
+    wireguard_config = sha256(jsonencode({
+      private_key = var.debian_wireguard_private_key
+      server_key  = var.wireguard_server_public_key
+      bastion     = var.bastion_host
+      address     = "10.99.0.20/24"
+      port        = 51820
+    }))
   }
 
   depends_on = [
@@ -228,6 +234,7 @@ resource "null_resource" "wireguard_setup" {
 resource "null_resource" "firewall_setup" {
   triggers = {
     ports_config = jsonencode(var.debian_allowed_ports)
+    nodeport_range = "30000-32767"  # Kubernetes NodePort range
   }
 
   depends_on = [
@@ -281,11 +288,17 @@ resource "null_resource" "firewall_setup" {
         "",
         "# Allow configured ports from anywhere"
       ],
-      [for port in var.debian_allowed_ports : 
+      [for port in var.debian_allowed_ports :
         "sudo iptables -A INPUT -p ${port.protocol} --dport ${port.port} -m comment --comment '${port.comment}' -j ACCEPT"
       ],
       [
         "",
+        "# Allow Kubernetes NodePort range (30000-32767) for all protocols",
+        "sudo iptables -A INPUT -p tcp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services' -j ACCEPT",
+        "sudo iptables -A INPUT -p udp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services' -j ACCEPT",
+        ""
+      ],
+      [
         "# Allow all traffic from WireGuard network",
         "sudo iptables -A INPUT -s 10.99.0.0/24 -j ACCEPT",
         "",
