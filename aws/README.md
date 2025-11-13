@@ -109,11 +109,10 @@ After it runs:
    sudo wg-quick up ~/.config/wireguard/<peer>.conf
    ```
 
-By default the helper now writes `AllowedIPs = 10.99.0.0/24`, so only traffic destined
-for the VPN subnet (the bastion or other WireGuard peers) traverses the tunnel and
-your normal internet route stays untouched. Need extra routes (e.g., the private IP
-of the Kubernetes host) pushed through the tunnel? Set `WIREGUARD_ALLOWED_IPS` before
-running the helper, for example
-`WIREGUARD_ALLOWED_IPS="10.99.0.0/24,172.31.82.16/32" python3 aws/scripts/local-wireguard-setup-on-macos.py`.
+During the helper run you’ll be prompted for “CIDRs to route through WireGuard”.
+Keep the default (`10.99.0.0/24`) if you only need access to the VPN subnet.
+If you also need to reach other networks (for example the bastion’s private IP
+or the Debian host), add them as a comma-separated list such as
+`10.99.0.0/24,172.31.82.16/32`.
 
 WireGuard requires elevated privileges to create the tunnel interface on macOS, so `sudo wg-quick` is expected. Use `sudo wg-quick down …` to disconnect.
