@@ -230,17 +230,24 @@ resource "null_resource" "k8s_init" {
       "fi",
       "if [ \"$CLUSTER_READY\" -eq 0 ]; then",
       "  echo 'Cluster unhealthy; performing aggressive cleanup before re-initializing...'",
-      "  sudo systemctl stop kubelet || true",
+      "  sudo systemctl disable --now kubelet || true",
+      "  echo 'Force killing any leftover kubelet processes to drop in-memory state...'",
+      "  sudo pkill -9 -f kubelet || true",
+      "  sudo killall -9 kubelet || true",
       "  echo 'Stopping all containerd sandboxes and containers (crictl)...'",
       "  sudo crictl pods -q | xargs -r sudo crictl stopp || true",
       "  sudo crictl pods -q | xargs -r sudo crictl rmp || true",
       "  sudo crictl ps -a -q | xargs -r sudo crictl stop || true",
       "  sudo crictl ps -a -q | xargs -r sudo crictl rm || true",
-      "  echo 'Restarting containerd to flush leaked sandboxes...'",
-      "  sudo systemctl restart containerd || true",
+      "  echo 'Stopping containerd to wipe runtime state...'",
+      "  sudo systemctl stop containerd || true",
+      "  sudo rm -rf /var/lib/containerd || true",
+      "  sudo mkdir -p /var/lib/containerd || true",
+      "  echo 'Starting containerd fresh...'",
+      "  sudo systemctl start containerd || true",
       "  sleep 2",
-      "  sudo rm -rf /var/lib/kubelet/pods/* || true",
-      "  sudo rm -rf /var/lib/kubelet/plugins/* || true",
+      "  sudo rm -rf /var/lib/kubelet || true",
+      "  sudo mkdir -p /var/lib/kubelet || true",
       "  sudo rm -f /etc/kubernetes/manifests/*.yaml || true",
       "  sudo rm -rf /var/lib/etcd/* || true",
       "  sudo rm -rf /etc/cni/net.d/* || true",
@@ -248,15 +255,9 @@ resource "null_resource" "k8s_init" {
       "  echo 'Running kubeadm init (skip CoreDNS) to bootstrap control plane...'",
       "  sudo kubeadm reset -f || true",
       "  sudo kubeadm init --config /tmp/kubeadm-config.yaml --upload-certs --skip-phases=addon/coredns",
-      "  echo 'Patching startup and liveness probes IMMEDIATELY (before kubelet starts)...'",
-      "  echo '  - Patching etcd startup probe (30s initial delay)...'",
-      "  sudo sed -i '/startupProbe:/,/initialDelaySeconds: 10/{s/initialDelaySeconds: 10/initialDelaySeconds: 30/}' /etc/kubernetes/manifests/etcd.yaml",
-      "  echo '  - Patching kube-apiserver startup probe (30s initial delay)...'",
-      "  sudo sed -i '/startupProbe:/,/initialDelaySeconds: 10/{s/initialDelaySeconds: 10/initialDelaySeconds: 30/}' /etc/kubernetes/manifests/kube-apiserver.yaml",
-      "  echo '  - Patching kube-apiserver liveness probe (15s initial delay)...'",
-      "  sudo sed -i '/livenessProbe:/,/initialDelaySeconds: 10/{s/initialDelaySeconds: 10/initialDelaySeconds: 15/}' /etc/kubernetes/manifests/kube-apiserver.yaml",
-      "  echo '✓ Probes patched successfully'",
-      "  echo 'Starting kubelet to begin control plane bootstrap...'",
+      "  echo '✓ kubeadm init completed successfully'",
+      "  echo 'Re-enabling kubelet service and starting fresh...'",
+      "  sudo systemctl enable kubelet || true",
       "  sudo systemctl start kubelet",
       "  echo 'Waiting for etcd to become healthy (max 60s)...'",
       "  ETCD_READY=0",
@@ -330,9 +331,9 @@ resource "null_resource" "fetch_kubeconfig" {
   # Uses SSH agent for authentication (no -i flag needed)
   provisioner "local-exec" {
     command = var.bastion_host != "" ? (
-      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand='ssh -W %h:%p ${var.bastion_user}@${var.bastion_host} -p ${var.bastion_port}' -P ${var.host_port} ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
+      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand='ssh -W %h:%p ${var.bastion_user}@${var.bastion_host} -p ${var.bastion_port}' -P ${var.host_port} ${var.ssh_user}@${var.host}:/tmp/kubeconfig \"${var.kubeconfig_local_path}\""
     ) : (
-      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${var.host_port} ${var.ssh_user}@${var.host}:/tmp/kubeconfig ${var.kubeconfig_local_path}"
+      "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${var.host_port} ${var.ssh_user}@${var.host}:/tmp/kubeconfig \"${var.kubeconfig_local_path}\""
     )
   }
 }
