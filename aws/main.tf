@@ -116,11 +116,6 @@ resource "null_resource" "wireguard_server" {
     destination = "/home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
   }
 
-  provisioner "file" {
-    source      = "${path.module}/data"
-    destination = "/home/${var.jump_host_admin_user}/wireguard-data"
-  }
-
   provisioner "remote-exec" {
     inline = [
       "sudo chmod +x /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh",

@@ -155,6 +155,150 @@ resource "null_resource" "k8s_host_prep" {
   }
 }
 
+# Step 1.5: Setup WireGuard on Debian host
+resource "null_resource" "wireguard_setup" {
+  triggers = {
+    always_run = timestamp()  # Always run to ensure WireGuard is configured
+  }
+
+  depends_on = [
+    null_resource.k8s_host_prep
+  ]
+
+  connection {
+    type  = local.ssh_connection.type
+    user  = local.ssh_connection.user
+    host  = local.ssh_connection.host
+    port  = local.ssh_connection.port
+    agent = local.ssh_connection.agent
+
+    # Bastion settings (optional)
+    bastion_host = local.ssh_connection.bastion_host
+    bastion_user = local.ssh_connection.bastion_user
+    bastion_port = local.ssh_connection.bastion_port
+  }
+
+  # Install WireGuard
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "if ! command -v wg >/dev/null 2>&1; then",
+      "  sudo apt-get update",
+      "  sudo apt-get install -y wireguard wireguard-tools",
+      "fi"
+    ]
+  }
+
+  # Configure WireGuard
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "sudo mkdir -p /etc/wireguard",
+      "cat <<'EOF' | sudo tee /etc/wireguard/wg0.conf > /dev/null",
+      "[Interface]",
+      "PrivateKey = ${var.debian_wireguard_private_key}",
+      "Address = 10.99.0.20/24",
+      "ListenPort = 51820",
+      "",
+      "[Peer]",
+      "# WireGuard Server (AWS Bastion)",
+      "PublicKey = ${var.wireguard_server_public_key}",
+      "Endpoint = ${var.bastion_host}:51820",
+      "AllowedIPs = 10.99.0.0/24",
+      "PersistentKeepalive = 25",
+      "EOF",
+      "sudo chmod 600 /etc/wireguard/wg0.conf"
+    ]
+  }
+
+  # Enable and start WireGuard
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "sudo systemctl enable wg-quick@wg0 || true",
+      "sudo systemctl restart wg-quick@wg0 || sudo systemctl start wg-quick@wg0",
+      "sleep 2",
+      "sudo wg show",
+      "echo 'WireGuard setup complete. Debian host IP: 10.99.0.20'"
+    ]
+  }
+}
+
+# Step 1.6: Setup firewall hardening
+resource "null_resource" "firewall_setup" {
+  triggers = {
+    ports_config = jsonencode(var.debian_allowed_ports)
+  }
+
+  depends_on = [
+    null_resource.wireguard_setup
+  ]
+
+  connection {
+    type  = local.ssh_connection.type
+    user  = local.ssh_connection.user
+    host  = local.ssh_connection.host
+    port  = local.ssh_connection.port
+    agent = local.ssh_connection.agent
+
+    # Bastion settings (optional)
+    bastion_host = local.ssh_connection.bastion_host
+    bastion_user = local.ssh_connection.bastion_user
+    bastion_port = local.ssh_connection.bastion_port
+  }
+
+  # Install iptables-persistent
+  provisioner "remote-exec" {
+    inline = [
+      "set -euxo pipefail",
+      "sudo apt-get update",
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent"
+    ]
+  }
+
+  # Configure firewall rules
+  provisioner "remote-exec" {
+    inline = concat(
+      [
+        "set -euxo pipefail",
+        "# Flush existing rules (careful!)",
+        "sudo iptables -F INPUT || true",
+        "sudo iptables -F FORWARD || true",
+        "",
+        "# Default policies",
+        "sudo iptables -P INPUT DROP",
+        "sudo iptables -P FORWARD ACCEPT",
+        "sudo iptables -P OUTPUT ACCEPT",
+        "",
+        "# Allow loopback",
+        "sudo iptables -A INPUT -i lo -j ACCEPT",
+        "",
+        "# Allow established connections",
+        "sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+        "",
+        "# Allow ICMP (ping)",
+        "sudo iptables -A INPUT -p icmp -j ACCEPT",
+        "",
+        "# Allow configured ports from anywhere"
+      ],
+      [for port in var.debian_allowed_ports : 
+        "sudo iptables -A INPUT -p ${port.protocol} --dport ${port.port} -m comment --comment '${port.comment}' -j ACCEPT"
+      ],
+      [
+        "",
+        "# Allow all traffic from WireGuard network",
+        "sudo iptables -A INPUT -s 10.99.0.0/24 -j ACCEPT",
+        "",
+        "# Save rules",
+        "sudo sh -c 'iptables-save > /etc/iptables/rules.v4'",
+        "sudo systemctl enable netfilter-persistent",
+        "",
+        "echo 'Firewall rules configured and saved'"
+      ]
+    )
+  }
+}
+
 # Step 2: Upload kubeadm config
 resource "null_resource" "upload_kubeadm_config" {
   triggers = {
@@ -695,4 +839,32 @@ resource "null_resource" "install_addons" {
   }
 
   depends_on = [null_resource.fetch_kubeconfig]
+}
+
+# Validation outputs for WireGuard configuration
+output "wireguard_verification_instructions" {
+  description = "Instructions to verify WireGuard server public key matches AWS bastion"
+  value       = <<-EOT
+
+    ⚠️  IMPORTANT - Verify WireGuard Server Public Key
+
+    The configured WireGuard server public key is:
+    ${var.wireguard_server_public_key}
+
+    To verify this matches the actual AWS bastion, run:
+
+    ssh bastion@${var.bastion_host} 'sudo cat /etc/wireguard/server.pub'
+
+    Compare the output with the key above. They must match exactly.
+
+    If they don't match:
+    1. Update wireguard_server_public_key in k8s/k8s.tfvars
+    2. Re-run: tofu apply -var-file=k8s.tfvars
+
+  EOT
+}
+
+output "wireguard_debian_private_key_info" {
+  description = "WireGuard Debian private key status"
+  value       = "✅ Private key is now managed via Terraform variables (marked sensitive)"
 }

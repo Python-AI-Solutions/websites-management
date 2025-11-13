@@ -5,20 +5,7 @@ WG_ADDRESS="${WG_ADDRESS:-10.99.0.1/24}"
 WG_PORT="${WG_PORT:-51820}"
 FRP_CONTROL_PORT=7005
 FRP_SSH_PORT=7006
-IPSET_NAME="geo_ingress_allow"
 TMP_DIR="$(mktemp -d)"
-SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATA_DIR="${SCRIPT_ROOT}/wireguard-data"
-INDIA_FILE="${DATA_DIR}/india_cidrs.txt"
-IRELAND_FILE="${DATA_DIR}/ireland_cidrs.txt"
-
-if [ ! -f "${INDIA_FILE}" ] || [ ! -f "${IRELAND_FILE}" ]; then
-  echo "CIDR data files not found under ${DATA_DIR}" >&2
-  exit 1
-fi
-
-mapfile -t INDIA_CIDRS < "${INDIA_FILE}"
-mapfile -t IRELAND_CIDRS < "${IRELAND_FILE}"
 
 if [ -n "${WG_PEERS_B64:-}" ]; then
   WG_PEERS_JSON="$(echo "${WG_PEERS_B64}" | base64 --decode)"
@@ -33,7 +20,7 @@ trap cleanup EXIT
 
 sudo apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  wireguard ipset ipset-persistent iptables-persistent curl
+  wireguard iptables-persistent curl
 
 sudo install -d -m 700 /etc/wireguard
 
@@ -66,88 +53,54 @@ else
   sudo systemctl enable --now wg-quick@wg0
 fi
 
-sudo ipset create "${IPSET_NAME}" hash:net -exist
-sudo ipset flush "${IPSET_NAME}"
-
-for cidr in "${INDIA_CIDRS[@]}"; do
-  cidr="${cidr//[$'\\t\\r\\n']/}"
-  [ -z "${cidr}" ] && continue
-  sudo ipset add "${IPSET_NAME}" "${cidr}" -exist
-done
-
-for cidr in "${IRELAND_CIDRS[@]}"; do
-  cidr="${cidr//[$'\\t\\r\\n']/}"
-  [ -z "${cidr}" ] && continue
-  sudo ipset add "${IPSET_NAME}" "${cidr}" -exist
-done
-
-sudo sh -c "ipset save > /etc/ipset.conf"
-sudo systemctl enable --now netfilter-persistent
+# Note: Removed ipset/geo-restriction logic per John's instructions
+# The security group now handles access control at the AWS level
 
 allow_port() {
   local proto="$1"
   local port="$2"
-
-  if ! sudo iptables -C INPUT -i lo -p "${proto}" --dport "${port}" -j ACCEPT 2>/dev/null; then
-    sudo iptables -I INPUT -i lo -p "${proto}" --dport "${port}" -j ACCEPT
-  fi
-
-  if ! sudo iptables -C INPUT -p "${proto}" --dport "${port}" -m set --match-set "${IPSET_NAME}" src -j ACCEPT 2>/dev/null; then
-    sudo iptables -I INPUT -p "${proto}" --dport "${port}" -m set --match-set "${IPSET_NAME}" src -j ACCEPT
-  fi
-
-  if ! sudo iptables -C INPUT -p "${proto}" --dport "${port}" -j DROP 2>/dev/null; then
-    sudo iptables -A INPUT -p "${proto}" --dport "${port}" -j DROP
+  local rule="INPUT -p ${proto} --dport ${port} -j ACCEPT"
+  
+  if ! sudo iptables -C ${rule} 2>/dev/null; then
+    sudo iptables -I ${rule}
   fi
 }
 
+# Allow WireGuard and FRP ports
 allow_port udp "${WG_PORT}"
 allow_port tcp "${FRP_CONTROL_PORT}"
 allow_port tcp "${FRP_SSH_PORT}"
 
-sudo netfilter-persistent save
+# Save iptables rules
+sudo sh -c "iptables-save > /etc/iptables/rules.v4"
+sudo systemctl enable --now netfilter-persistent
 
-configure_peers() {
-  local peers_json="$1"
-  python3 - "$peers_json" <<'PY'
-import json, sys
-peers = json.loads(sys.argv[1])
+echo "${WG_PEERS_JSON}" | python3 -c '
+import sys, json, subprocess
+
+peers = json.load(sys.stdin)
 for peer in peers:
-    pub = peer.get("public_key")
-    allowed = peer.get("allowed_ips") or []
-    if not pub or not allowed:
-        continue
+    name = peer.get("name", "unnamed")
+    pubkey = peer["public_key"]
+    allowed_ips = ",".join(peer.get("allowed_ips", []))
     keepalive = peer.get("persistent_keepalive", 25)
-    endpoint = peer.get("endpoint", "")
-    name = peer.get("name", "")
-    print("|".join([
-        pub,
-        ",".join(allowed),
-        str(keepalive),
-        endpoint,
-        name.replace("|", "_")
-    ]))
-PY
-}
+    
+    print(f"Adding peer: {name}")
+    cmd = [
+        "sudo", "wg", "set", "wg0",
+        "peer", pubkey,
+        "allowed-ips", allowed_ips
+    ]
+    if keepalive:
+        cmd.extend(["persistent-keepalive", str(keepalive)])
+    
+    subprocess.run(cmd, check=True)
+'
 
-PEERS_OUTPUT="$(configure_peers "${WG_PEERS_JSON}")"
+sudo wg
 
-if [ -n "$PEERS_OUTPUT" ]; then
-  EXISTING_PEERS=$(sudo wg show wg0 peers || true)
-  while read -r current_peer; do
-    [ -z "$current_peer" ] && continue
-    if ! grep -q "^${current_peer}|" <<< "$PEERS_OUTPUT"; then
-      sudo wg set wg0 peer "$current_peer" remove
-    fi
-  done <<< "$EXISTING_PEERS"
+# Persist the configuration
+sudo sh -c "wg-quick save wg0"
 
-  while IFS="|" read -r pub allowed keepalive endpoint peer_name; do
-    [ -z "$pub" ] && continue
-    sudo wg set wg0 peer "$pub" remove 2>/dev/null || true
-    cmd=(sudo wg set wg0 peer "$pub" allowed-ips "$allowed" persistent-keepalive "$keepalive")
-    if [ -n "$endpoint" ]; then
-      cmd+=("endpoint" "$endpoint")
-    fi
-    "${cmd[@]}"
-  done <<< "$PEERS_OUTPUT"
-fi
+echo "WireGuard server setup complete"
+echo "Server public key: $(sudo cat /etc/wireguard/server.pub)"

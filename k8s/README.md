@@ -9,6 +9,7 @@ This OpenTofu/Terraform stack bootstraps a single-node Kubernetes cluster on a r
 - `kubectl` installed locally
 - Outbound internet connectivity from the target host
 - **SSH agent running with keys loaded** (for authentication)
+- **WireGuard configured** (see [WIREGUARD_SETUP.md](./WIREGUARD_SETUP.md) for details)
 
 ### SSH Agent Setup
 
@@ -120,6 +121,8 @@ kubectl get storageclass
 | `bastion_host` | Bastion/jump host (optional) | `""` |
 | `bastion_user` | Bastion username (optional) | `""` |
 | `bastion_port` | Bastion port (optional) | `22` |
+| `wireguard_server_public_key` | WireGuard server public key | `""` |
+| `debian_allowed_ports` | Firewall allowed ports list | See variables.tf |
 
 ## Bastion/Jump Host
 

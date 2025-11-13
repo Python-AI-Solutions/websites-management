@@ -110,3 +110,41 @@ variable "enable_letsencrypt_staging" {
   type        = bool
   default     = true
 }
+
+# WireGuard Configuration
+variable "wireguard_server_public_key" {
+  description = "Public key of the WireGuard server (bastion host)"
+  type        = string
+  default     = ""  # Will be set in k8s.tfvars
+}
+
+variable "debian_wireguard_private_key" {
+  description = "Private key for the Debian host WireGuard interface (must be kept secret)"
+  type        = string
+  sensitive   = true  # Redacts from logs and output
+  default     = ""    # Will be set in k8s.tfvars (KEEP SECURE!)
+}
+
+# Firewall Configuration
+variable "debian_allowed_ports" {
+  description = "List of ports to allow through the firewall"
+  type = list(object({
+    protocol = string
+    port     = number
+    comment  = string
+  }))
+  default = [
+    # SSH
+    { protocol = "tcp", port = 22, comment = "SSH" },
+    # WireGuard
+    { protocol = "udp", port = 51820, comment = "WireGuard VPN" },
+    # Kubernetes API
+    { protocol = "tcp", port = 6443, comment = "Kubernetes API" },
+    # HTTP/HTTPS (for Traefik ingress)
+    { protocol = "tcp", port = 80, comment = "HTTP" },
+    { protocol = "tcp", port = 443, comment = "HTTPS" },
+    # NodePort services range (optional, can be removed if not needed)
+    { protocol = "tcp", port = 30000, comment = "NodePort services start" },
+    { protocol = "tcp", port = 32767, comment = "NodePort services end" }
+  ]
+}

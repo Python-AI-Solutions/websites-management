@@ -52,3 +52,10 @@ Thumbs.db
 *.key
 id_rsa*
 id_ed25519*
+
+# GCP service account credentials (security)
+*-gcs-admin-*.json
+platform-cluster-admin-*.json
+
+# WireGuard private keys (security)
+k8s/debian-wireguard-keys.md
