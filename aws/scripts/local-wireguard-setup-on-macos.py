@@ -17,6 +17,12 @@ PEERS_FILE = AWS_DIR / "wireguard-peers.auto.tfvars.json"
 CONFIG_DIR = Path.home() / ".config" / "wireguard"
 WG_BIN = shutil.which("wg")
 
+# When AllowedIPs is `0.0.0.0/0` the tunnel becomes the default route. To keep
+# general internet traffic on the normal interface, limit AllowedIPs to the
+# WireGuard subnet (default) or explicitly-specified destinations.
+ALLOWED_IPS_ENV_VAR = "WIREGUARD_ALLOWED_IPS"
+DEFAULT_ALLOWED_IPS = ["10.99.0.0/24"]
+
 
 def run(cmd, **kwargs):
     result = subprocess.run(
@@ -60,6 +66,15 @@ def generate_keys(peer_name):
     return private_key, public_key
 
 
+def normalized_allowed_ips():
+    raw = os.environ.get(ALLOWED_IPS_ENV_VAR, "")
+    if raw:
+        candidates = [part.strip() for part in raw.replace(",", " ").split() if part.strip()]
+        if candidates:
+            return candidates
+    return list(DEFAULT_ALLOWED_IPS)
+
+
 def load_peers():
     if PEERS_FILE.exists():
         data = json.loads(PEERS_FILE.read_text())
@@ -84,8 +99,14 @@ def next_available_ip(existing):
 
 
 def terraform_public_ip():
+    # Use bash -c instead of -lc to avoid sourcing .bashrc/.bash_profile
+    # which can pollute stdout with echo statements
+    env = os.environ.copy()
+    # Ensure PATH includes common locations for tofu
+    env["PATH"] = f"/opt/homebrew/bin:{env.get('PATH', '')}"
     return run(
-        ["bash", "-lc", f"cd {AWS_DIR} && tofu output -raw jump_host_public_ip"]
+        ["bash", "-c", f"cd {AWS_DIR} && tofu output -raw jump_host_public_ip"],
+        env=env
     )
 
 
@@ -100,8 +121,9 @@ def server_listen_port():
     return output.split("=")[1].strip()
 
 
-def write_client_config(peer_name, private_key, server_key, endpoint, allowed_ip, port):
+def write_client_config(peer_name, private_key, server_key, endpoint, allowed_ip, port, allowed_ips):
     conf_path = CONFIG_DIR / f"{peer_name}.conf"
+    allowed_ips_text = ", ".join(allowed_ips)
     conf_path.write_text(
         f"""[Interface]
 PrivateKey = {private_key}
@@ -111,7 +133,7 @@ DNS = 1.1.1.1
 [Peer]
 PublicKey = {server_key}
 Endpoint = {endpoint}:{port}
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = {allowed_ips_text}
 PersistentKeepalive = 25
 """
     )
@@ -143,8 +165,9 @@ def main():
     endpoint_ip = terraform_public_ip()
     server_key = server_public_key()
     listen_port = server_listen_port()
+    allowed_ips = normalized_allowed_ips()
     conf_path = write_client_config(
-        peer_name, private_key, server_key, endpoint_ip, allowed_ip, listen_port
+        peer_name, private_key, server_key, endpoint_ip, allowed_ip, listen_port, allowed_ips
     )
 
     print("\nDone! Next steps:")
