@@ -59,3 +59,7 @@ platform-cluster-admin-*.json
 
 # WireGuard private keys (security)
 k8s/debian-wireguard-keys.md
+*.conf                          # WireGuard config files with private keys
+~/.config/wireguard/            # User's WireGuard configs
+sumit.conf                      # User-specific WireGuard config files
+*-wireguard-keys.md             # Any WireGuard key files
