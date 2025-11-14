@@ -285,9 +285,117 @@ Note: This will not clean up the Debian host itself. To fully reset, you may nee
 - Remove `/etc/kubernetes/`, `/var/lib/kubelet/`, `/etc/cni/`
 - Restart the host
 
+## Kubeconfig Management
+
+### Automatic Generation
+
+After successful `tofu apply`, the kubeconfig is automatically fetched from the Kubernetes host:
+
+```bash
+# kubeconfig is automatically placed in:
+./kubeconfig
+
+# Use it with kubectl:
+export KUBECONFIG=$(pwd)/kubeconfig
+kubectl get nodes
+```
+
+### ⚠️ SECURITY: Never Commit kubeconfig to Git
+
+The kubeconfig file contains **full cluster-admin credentials**. It must NEVER be committed to git.
+
+**Protection in place:**
+```bash
+# Check: kubeconfig patterns are in .gitignore
+grep kubeconfig .gitignore
+```
+
+**If accidentally committed, remove from history:**
+```bash
+# Remove from git tracking
+git rm --cached k8s/kubeconfig
+
+# Clean git history (only if not shared with others)
+git filter-repo --path k8s/kubeconfig --invert-paths
+```
+
+### Secure kubeconfig Storage
+
+**Local Storage (Recommended):**
+```bash
+# Create secure directory
+mkdir -p ~/.kube
+chmod 700 ~/.kube
+
+# Store kubeconfig securely
+cp k8s/kubeconfig ~/.kube/xps-cluster-config
+chmod 600 ~/.kube/xps-cluster-config
+
+# Use it
+export KUBECONFIG=~/.kube/xps-cluster-config
+kubectl get nodes
+```
+
+**Sharing with Team Members:**
+
+❌ **WRONG:**
+```bash
+git push kubeconfig  # DON'T DO THIS
+zip -r project.zip . # Contains kubeconfig!
+```
+
+✅ **RIGHT:**
+```bash
+# Share via secure channel (not git, not email)
+# Option 1: Slack/Teams (with ephemeral message)
+# Option 2: 1Password/Vault
+# Option 3: Secure file sharing (Tresorit, Sync.com)
+
+# Recipient should:
+mkdir -p ~/.kube
+# Place kubeconfig in ~/.kube/config or custom path
+chmod 600 ~/.kube/config
+```
+
+### Multiple kubeconfigs
+
+If managing multiple clusters:
+
+```bash
+# Keep separate configs
+~/.kube/xps-cluster-config
+~/.kube/production-cluster
+~/.kube/staging-cluster
+
+# Use KUBECONFIG env var to merge or switch
+export KUBECONFIG=~/.kube/xps-cluster-config:~/.kube/production-cluster
+kubectl config get-contexts
+```
+
+### Rotating kubeconfig
+
+When kubeconfig expires or needs rotation:
+
+```bash
+# Re-run terraform to fetch new kubeconfig
+tofu apply -var-file=k8s.tfvars
+
+# Verify new kubeconfig works
+kubectl --kubeconfig=$(pwd)/kubeconfig get nodes
+
+# Update your secure storage
+cp k8s/kubeconfig ~/.kube/xps-cluster-config
+chmod 600 ~/.kube/xps-cluster-config
+```
+
+---
+
 ## Security Notes
 
-- The kubeconfig file contains admin credentials - keep it secure
-- Consider implementing RBAC for production use
+- **kubeconfig file contains admin credentials** - Keep it secure, NEVER commit to git
+- **Local storage:** `~/.kube/xps-cluster-config` with `chmod 600`
+- **Sharing:** Use secure channels only, NOT git or email
+- Consider implementing RBAC for production use (defers cluster-admin access to non-admin users)
 - Enable audit logging for compliance requirements
-- Use network policies to restrict pod-to-pod communication
+- Use network policies (Cilium) to restrict pod-to-pod communication
+- Rotate kubeconfig periodically (at least annually)
