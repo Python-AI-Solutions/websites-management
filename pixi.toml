@@ -1,13 +1,14 @@
-[project]
+[workspace]
 name = "cloudflare-management"
 version = "0.1.0"
 description = "Cloudflare DNS management for pythonaisolutions.com using OpenTofu."
 channels = ["conda-forge"]
-platforms = ["osx-arm64", "linux-64", "win-64"]
+platforms = ["osx-arm64", "linux-64", "win-64", "osx-64"]
 
 [dependencies]
 python = "3.11.*"
 pre-commit = ">=4.3.0,<5"
+opentofu = ">=1.6.0,<2"
 tflint = ">=0.58.1,<0.59"
 dnspython = ">=2.6,<3"
 python-hcl2 = ">=3.0,<4"
@@ -28,23 +29,53 @@ cmd = "cd root && tflint --init && tflint"
 [tasks.workspace-staging]
 cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
 
+[tasks."workspace:staging"]
+cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
+
+[tasks.ws-staging]
+cmd = "cd root && tofu workspace select staging || tofu workspace new staging"
+
 [tasks.workspace-prod]
+cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
+
+[tasks."workspace:prod"]
+cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
+
+[tasks.ws-prod]
 cmd = "cd root && tofu workspace select prod || tofu workspace new prod"
 
 [tasks.plan-staging]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan'"
 
+[tasks."plan:staging"]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan'"
+
 [tasks.plan-prod]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
+
+[tasks."plan:prod"]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
 
 [tasks.apply-staging]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
 
+[tasks."apply:staging"]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
+
 [tasks.apply-prod]
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
+
+[tasks."apply:prod"]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
 
 [tasks.verify-dns]
 cmd = "python scripts/verify_dns.py"
 
+[tasks."verify:dns"]
+cmd = "python scripts/verify_dns.py"
+
 [tasks.analyze-sites]
+cmd = "bash scripts/analyze-sites.sh"
+
+[tasks."analyze:sites"]
 cmd = "bash scripts/analyze-sites.sh"

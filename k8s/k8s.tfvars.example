@@ -1,0 +1,36 @@
+# Example Kubernetes Cluster Configuration
+# Copy this file to k8s.tfvars and fill in your values
+#
+# cp k8s.tfvars.example k8s.tfvars
+#
+# The k8s.tfvars file is gitignored and will contain your local configuration
+
+# IMPORTANT: Authentication uses SSH Agent ONLY
+# Before running tofu apply, load your SSH keys:
+#   ssh-add ~/.ssh/your_key
+#   ssh-add ~/.ssh/your_bastion_key  # if using bastion
+#
+# Verify keys are loaded: ssh-add -L
+
+# SSH Configuration
+host                    = "your-host-or-localhost"
+host_port               = 22
+ssh_user                = "sysadmin"
+
+# Cluster Configuration
+cluster_name            = "k8s"
+
+# Optional: Bastion/Jump Host (if accessing through a jump server)
+# Leave empty strings if not using a bastion
+bastion_host            = ""  # e.g., "jump.example.com"
+bastion_user            = ""  # e.g., "yourusername"
+bastion_port            = 22
+
+# Optional: Customize Kubernetes settings
+# kubernetes_version    = "1.30.5"
+# pod_cidr             = "10.244.0.0/16"
+# service_cidr         = "10.96.0.0/12"
+
+# Optional: ACME/Let's Encrypt for cert-manager
+# acme_email                  = "your-email@example.com"
+# enable_letsencrypt_staging  = true

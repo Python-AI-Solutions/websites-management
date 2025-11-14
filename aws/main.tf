@@ -68,6 +68,14 @@ resource "aws_security_group" "jump_host" {
     cidr_blocks = var.jump_host_port_7005_cidrs
   }
 
+  ingress {
+    description = "WireGuard VPN"
+    from_port   = var.wireguard_listen_port
+    to_port     = var.wireguard_listen_port
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -80,5 +88,38 @@ resource "aws_security_group" "jump_host" {
 
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "null_resource" "wireguard_server" {
+  depends_on = [
+    aws_instance.jump_host,
+    aws_security_group.jump_host
+  ]
+
+  triggers = {
+    wireguard_address     = var.wireguard_address
+    wireguard_listen_port = var.wireguard_listen_port
+    wireguard_peers_hash  = sha1(jsonencode(var.wireguard_peers))
+    script_hash           = filesha1("${path.module}/scripts/wireguard-bootstrap.sh")
+  }
+
+  connection {
+    host    = aws_eip.jump_host.public_ip
+    user    = var.jump_host_admin_user
+    agent   = true
+    timeout = "5m"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/scripts/wireguard-bootstrap.sh"
+    destination = "/home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo chmod +x /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh",
+      "sudo WG_ADDRESS='${var.wireguard_address}' WG_PORT='${var.wireguard_listen_port}' WG_PEERS_B64='${base64encode(jsonencode(var.wireguard_peers))}' /home/${var.jump_host_admin_user}/wireguard-bootstrap.sh"
+    ]
   }
 }
