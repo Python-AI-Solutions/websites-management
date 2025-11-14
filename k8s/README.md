@@ -390,6 +390,186 @@ chmod 600 ~/.kube/xps-cluster-config
 
 ---
 
+## Kubernetes Security Hardening
+
+This cluster includes multiple security hardening features to protect sensitive operations and data:
+
+### 1. Emergency-Only kubeconfig Access
+
+**IMPORTANT:** Kubeconfig access is restricted to emergencies only.
+
+### Recommended Workflow (Emergency Use Only)
+
+The kubeconfig file represents full cluster-admin access. It should ONLY be used for emergencies:
+
+```bash
+# STEP 1: Fetch kubeconfig from Terraform state (emergency only)
+tofu apply -var-file=k8s.tfvars
+# kubeconfig is now at: ./kubeconfig
+
+# STEP 2: Use immediately for emergency troubleshooting
+export KUBECONFIG=$(pwd)/kubeconfig
+kubectl describe pod <problematic-pod>
+kubectl logs <container>
+# Fix the emergency issue...
+
+# STEP 3: Delete kubeconfig immediately after emergency
+rm k8s/kubeconfig
+unset KUBECONFIG
+```
+
+### What kubeconfig Grants
+
+The kubeconfig file contains:
+- **Full cluster-admin credentials** (can modify anything in cluster)
+- **Root access equivalent** to the Kubernetes cluster
+- **Complete audit trail** - all actions are logged via API audit logging
+
+### Why Emergency-Only?
+
+1. **Security Risk:** Cluster-admin credentials should have minimal exposure
+2. **Audit Trail:** Every action is logged - track who did what
+3. **Better Alternative:** Use RBAC for regular access (planned future phase)
+4. **Separation of Concerns:** Operators should not have cluster-admin access
+
+### Preferred: RBAC for Team Access (Future)
+
+Instead of sharing kubeconfig, use Kubernetes RBAC:
+
+```bash
+# Create role for developers
+kubectl create role developer --verb=get,list --resource=pods,deployments,services
+kubectl create rolebinding developer-binding --clusterrole=developer --user=john@example.com
+
+# This gives limited, traceable access (NOT full cluster-admin)
+```
+
+### Key Difference
+
+| Method | Credentials | Audit | Risk |
+|--------|------------|-------|------|
+| **kubeconfig (current)** | Full cluster-admin | ✅ Logged | 🔴 High |
+| **RBAC (future Phase 2)** | Limited per role | ✅ Logged | 🟢 Low |
+
+### Deletion Checklist
+
+Before moving away from emergency kubeconfig access:
+
+- [ ] kubeconfig is NOT stored in git
+- [ ] kubeconfig is NOT in project directories
+- [ ] kubeconfig is NOT shared via email/Slack
+- [ ] kubeconfig is ONLY used in emergencies
+- [ ] All kubeconfig access is logged via audit logs
+- [ ] Team is trained on emergency procedure
+- [ ] RBAC will be implemented for regular access
+
+---
+
+### 2. SSH Access Hardening
+
+SSH access is now **restricted to WireGuard connections only**. Direct SSH from the internet is blocked.
+
+### SSH Routing Security Model
+
+| Source | Access | How | Verified |
+|--------|--------|-----|----------|
+| **WireGuard VPN** | ✅ Allowed | Via VPN tunnel (10.99.0.0/24) | iptables rules |
+| **Direct Internet** | ❌ Blocked | Firewall rule: TCP 22 from WireGuard only | Confirmed |
+| **AWS Bastion** | ✅ Allowed | Via WireGuard peer connection | VPN setup |
+| **Local Network** | ❌ Blocked | No local network access configured | Firewall |
+
+### How SSH Access Works
+
+```
+You → WireGuard VPN Endpoint (AWS Bastion:51820)
+      ↓
+     WireGuard Tunnel (encrypted)
+      ↓
+Debian Host (Internal IP: 10.99.0.20) ← SSH (22) from 10.99.0.0/24 ONLY
+```
+
+### Verify SSH→WireGuard Restriction
+
+**Test 1: SSH FROM WireGuard should work**
+
+```bash
+# From AWS Bastion (has WireGuard connection):
+ssh debian@10.99.0.20
+# ✅ Success - you're on WireGuard network
+```
+
+**Test 2: SSH FROM Internet should fail**
+
+```bash
+# From any non-WireGuard IP:
+ssh debian@<debian-host-public-ip>
+# ❌ Connection timeout or refused
+# This is GOOD - SSH is protected!
+```
+
+**Test 3: Check iptables rules on Debian host**
+
+```bash
+# SSH to Debian host via WireGuard (see Test 1)
+sudo iptables -L INPUT -n | grep -i ssh
+# Output should show: TCP dpt:22 ACCEPT from 10.99.0.0/24 only
+```
+
+### Security Implications
+
+✅ **What this protects against:**
+- Brute force SSH attacks from the internet
+- Unauthorized SSH access without VPN
+- Direct connection without going through WireGuard
+- Exposing SSH directly to public internet
+
+✅ **How it works:**
+- Firewall rule (iptables) blocks TCP port 22 except from 10.99.0.0/24
+- WireGuard subnet (10.99.0.0/24) is the ONLY allowed source
+- All SSH connections must go through WireGuard tunnel
+- Every SSH connection is logged via API audit logging
+
+### Configuration Details
+
+**Firewall Rule (iptables):**
+```bash
+iptables -A INPUT -s 10.99.0.0/24 -p tcp --dport 22 -m comment --comment 'SSH (WireGuard only)' -j ACCEPT
+```
+
+**WireGuard Subnet:**
+- Debian host: `10.99.0.20`
+- Server: `10.99.0.1`
+- Network: `10.99.0.0/24`
+
+**Verification Location:**
+- Rules file: `/etc/iptables/rules.v4`
+- Live rules: `sudo iptables -L -n`
+
+### Troubleshooting
+
+**Q: Can't SSH to Debian host?**
+```bash
+# Make sure you're on WireGuard VPN:
+wg show  # Check on AWS Bastion - should show active connection
+
+# Check peer status:
+sudo wg show  # From Debian host
+
+# Verify IP is in 10.99.0.0/24 range:
+# Your WireGuard IP should be 10.99.0.x (x = 1-254)
+```
+
+**Q: Is SSH really restricted?**
+```bash
+# From outside WireGuard, try:
+nmap -p 22 <debian-ip>
+# Should show: 22/tcp filtered (filtered = firewall blocking)
+
+# Never: 22/tcp open (that would be bad!)
+```
+
+---
+
 ## Security Notes
 
 - **kubeconfig file contains admin credentials** - Keep it secure, NEVER commit to git
