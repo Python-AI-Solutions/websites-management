@@ -293,9 +293,9 @@ resource "null_resource" "firewall_setup" {
       ],
       [
         "",
-        "# Allow Kubernetes NodePort range (30000-32767) for all protocols",
-        "sudo iptables -A INPUT -p tcp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services' -j ACCEPT",
-        "sudo iptables -A INPUT -p udp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services' -j ACCEPT",
+        "# Allow Kubernetes NodePort range (30000-32767) from WireGuard network only",
+        "sudo iptables -A INPUT -s 10.99.0.0/24 -p tcp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services (WireGuard only)' -j ACCEPT",
+        "sudo iptables -A INPUT -s 10.99.0.0/24 -p udp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services (WireGuard only)' -j ACCEPT",
         ""
       ],
       [
