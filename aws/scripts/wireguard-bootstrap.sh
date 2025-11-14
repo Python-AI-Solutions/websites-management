@@ -3,8 +3,6 @@ set -euxo pipefail
 
 WG_ADDRESS="${WG_ADDRESS:-10.99.0.1/24}"
 WG_PORT="${WG_PORT:-51820}"
-FRP_CONTROL_PORT=7005
-FRP_SSH_PORT=7006
 TMP_DIR="$(mktemp -d)"
 
 if [ -n "${WG_PEERS_B64:-}" ]; then
@@ -66,10 +64,9 @@ allow_port() {
   fi
 }
 
-# Allow WireGuard and FRP ports
+# Allow WireGuard port
+# NOTE: FRP is kept as emergency-only fallback, see aws/runbooks/FRP_EMERGENCY_ACCESS.md
 allow_port udp "${WG_PORT}"
-allow_port tcp "${FRP_CONTROL_PORT}"
-allow_port tcp "${FRP_SSH_PORT}"
 
 # Save iptables rules
 sudo sh -c "iptables-save > /etc/iptables/rules.v4"
