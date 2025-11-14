@@ -20,14 +20,11 @@ terraform {
     }
   }
 
-  # For testing: use local state backend
-  # For production: uncomment GCS backend below and set GOOGLE_APPLICATION_CREDENTIALS
-  
-  # Remote state stored in GCS bucket (production)
-  # backend "gcs" {
-  #   bucket = "k8s-tfstate-midyear-pattern-470017-b8"
-  #   prefix = "k8s-cluster/terraform.tfstate"
-  # }
+  # Remote state stored in encrypted GCS bucket
+  backend "gcs" {
+    bucket = "k8s-tfstate-midyear-pattern-470017-b8"
+    prefix = "k8s-cluster/terraform.tfstate"
+  }
 }
 
 # Provider configurations
