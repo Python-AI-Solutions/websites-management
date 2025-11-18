@@ -61,13 +61,19 @@ variable "jump_host_security_group_description" {
 variable "jump_host_ssh_cidrs" {
   description = "CIDR blocks allowed to access SSH on the jump host."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default = [
+    "10.99.0.0/24",
+    "109.76.78.109/32",
+    "223.190.84.183/32"
+  ]
 }
 
 variable "jump_host_port_7005_cidrs" {
   description = "CIDR blocks allowed to access TCP port 7005 on the jump host."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default = [
+    "10.99.0.0/24"
+  ]
 }
 
 variable "jump_host_security_group_tags" {

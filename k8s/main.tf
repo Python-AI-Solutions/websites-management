@@ -1174,8 +1174,8 @@ output "wireguard_verification_instructions" {
     Compare the output with the key above. They must match exactly.
 
     If they don't match:
-    1. Update wireguard_server_public_key in k8s/k8s.tfvars
-    2. Re-run: tofu apply -var-file=k8s.tfvars
+    1. Override wireguard_server_public_key (e.g. via terraform.tfvars or -var)
+    2. Re-run: tofu apply
 
   EOT
 }

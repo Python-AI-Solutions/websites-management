@@ -108,7 +108,7 @@ Additional rules:
 - Established connections are allowed
 - ICMP (ping) is allowed
 
-To modify allowed ports, edit `debian_allowed_ports` in `k8s/variables.tf` or override in `k8s.tfvars`.
+To modify allowed ports, edit `debian_allowed_ports` in `k8s/variables.tf` or override the variable via `terraform.tfvars`/`-var`.
 
 ## Terraform Variables
 

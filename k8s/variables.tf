@@ -3,12 +3,13 @@
 variable "host" {
   description = "Remote Debian host IP or DNS name"
   type        = string
+  default     = "localhost"
 }
 
 variable "host_port" {
   description = "SSH port for the remote host"
   type        = number
-  default     = 22
+  default     = 7006
 }
 
 variable "ssh_user" {
@@ -21,13 +22,13 @@ variable "ssh_user" {
 variable "bastion_host" {
   description = "Bastion/jump host for SSH access (optional)"
   type        = string
-  default     = ""
+  default     = "3.82.253.109"
 }
 
 variable "bastion_user" {
   description = "Username for bastion host"
   type        = string
-  default     = ""
+  default     = "newuser"
 }
 
 variable "bastion_port" {
@@ -40,7 +41,7 @@ variable "bastion_port" {
 variable "cluster_name" {
   description = "Name of the Kubernetes cluster"
   type        = string
-  default     = "xps-cluster"
+  default     = "k8s"
 }
 
 variable "kubernetes_version" {
@@ -115,14 +116,14 @@ variable "enable_letsencrypt_staging" {
 variable "wireguard_server_public_key" {
   description = "Public key of the WireGuard server (bastion host)"
   type        = string
-  default     = ""  # Will be set in k8s.tfvars
+  default     = ""  # Override via CLI or terraform.tfvars when rotating keys
 }
 
 variable "debian_wireguard_private_key" {
   description = "Private key for the Debian host WireGuard interface (must be kept secret)"
   type        = string
   sensitive   = true  # Redacts from logs and output
-  default     = ""    # Will be set in k8s.tfvars (KEEP SECURE!)
+  default     = ""    # Provide via CLI/terraform.tfvars when configuring the host (KEEP SECURE!)
 }
 
 # Firewall Configuration

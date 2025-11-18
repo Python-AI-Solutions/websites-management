@@ -17,14 +17,6 @@ echo "🔧 Kubernetes Cluster Setup"
 echo "=============================="
 echo ""
 
-# Check if k8s.tfvars exists
-if [ ! -f "k8s.tfvars" ]; then
-    echo "❌ k8s.tfvars not found!"
-    echo "   Run: ./ssh-config-helper.sh k8s-host"
-    echo "   Or:  cp k8s.tfvars.example k8s.tfvars"
-    exit 1
-fi
-
 # Sync known_hosts entries
 echo "📝 Step 1: Syncing known_hosts entries..."
 if [ -f "$HOME/.ssh/known_hosts.paijump" ]; then
@@ -51,4 +43,4 @@ echo ""
 # Run terraform apply
 echo "🚀 Step 3: Running OpenTofu apply..."
 echo ""
-exec tofu apply -var-file=k8s.tfvars "$@"
+exec tofu apply "$@"

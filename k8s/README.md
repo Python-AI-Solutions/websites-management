@@ -40,9 +40,7 @@ ssh-add -L
 
 **⚠️ Important:** SSH keys MUST be loaded in the agent before running (see Prerequisites above).
 
-### Step 1: Generate Configuration
-
-Use the helper script if you have an SSH config entry:
+### Step 1: Initialize (defaults already match the current host)
 
 ```bash
 cd k8s
@@ -51,17 +49,10 @@ tofu init
 # Ensure SSH keys are loaded
 ssh-add -L  # Verify keys are present
 
-# Generate k8s.tfvars from your SSH config
+# Optional: generate terraform.tfvars overrides from your SSH config
 ./ssh-config-helper.sh k8s-host
 
-# Review k8s.tfvars if needed
-```
-
-Or manually create `k8s.tfvars`:
-
-```bash
-cp k8s.tfvars.example k8s.tfvars
-# Edit with your values
+# Review terraform.tfvars if you need to override the baked-in defaults
 ```
 
 ### Step 2: Apply
@@ -74,7 +65,7 @@ cp k8s.tfvars.example k8s.tfvars
 This wrapper script automatically:
 - Syncs custom known_hosts entries (if using `~/.ssh/known_hosts.paijump`)
 - Checks SSH agent has keys loaded
-- Runs `tofu apply -var-file=k8s.tfvars`
+- Runs `tofu apply` with the checked-in defaults plus any overrides in `terraform.tfvars`
 
 **Manual way:**
 ```bash
@@ -82,7 +73,7 @@ This wrapper script automatically:
 ./sync-known-hosts.sh
 
 # Then apply
-tofu apply -var-file=k8s.tfvars
+tofu apply
 ```
 
 ### After Successful Apply
@@ -108,9 +99,10 @@ kubectl get storageclass
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `host` | Remote host IP/DNS (required) | - |
+| `host` | Remote host IP/DNS (defaults to the current FRP/localhost endpoint) | `localhost` |
+| `host_port` | SSH port for the remote host | `7006` |
 | `ssh_user` | SSH username | `sysadmin` |
-| `cluster_name` | Kubernetes cluster name | `xps-cluster` |
+| `cluster_name` | Kubernetes cluster name | `k8s` |
 | `kubernetes_version` | Kubernetes version | `1.30.5` |
 | `pod_cidr` | Pod network CIDR | `10.244.0.0/16` |
 | `service_cidr` | Service network CIDR | `10.96.0.0/12` |
@@ -118,8 +110,8 @@ kubectl get storageclass
 | `traefik_chart_version` | Traefik Helm chart version | `32.1.0` |
 | `cert_manager_chart_version` | cert-manager Helm chart version | `v1.16.1` |
 | `local_path_provisioner_chart_version` | local-path-provisioner version | `0.0.28` |
-| `bastion_host` | Bastion/jump host (optional) | `""` |
-| `bastion_user` | Bastion username (optional) | `""` |
+| `bastion_host` | Bastion/jump host (optional) | `3.82.253.109` |
+| `bastion_user` | Bastion username (optional) | `newuser` |
 | `bastion_port` | Bastion port (optional) | `22` |
 | `wireguard_server_public_key` | WireGuard server public key | `""` |
 | `debian_allowed_ports` | Firewall allowed ports list | See variables.tf |
@@ -134,7 +126,7 @@ The `ssh-config-helper.sh` script automatically detects bastion settings from yo
 
 **Manual Configuration:**
 
-Add these variables to your `k8s.tfvars`:
+Add these variables to `terraform.tfvars` (or pass them with `-var` flags):
 ```hcl
 bastion_host = "jump.example.com"
 bastion_user = "ubuntu"
@@ -261,7 +253,7 @@ ssh-add ~/.ssh/jumpproxy
 Or manually sync your custom known_hosts:
 ```bash
 ./sync-known-hosts.sh
-tofu apply -var-file=k8s.tfvars
+tofu apply
 ```
 
 **Manual fix:**
@@ -378,7 +370,7 @@ When kubeconfig expires or needs rotation:
 
 ```bash
 # Re-run terraform to fetch new kubeconfig
-tofu apply -var-file=k8s.tfvars
+tofu apply
 
 # Verify new kubeconfig works
 kubectl --kubeconfig=$(pwd)/kubeconfig get nodes
@@ -404,7 +396,7 @@ The kubeconfig file represents full cluster-admin access. It should ONLY be used
 
 ```bash
 # STEP 1: Fetch kubeconfig from Terraform state (emergency only)
-tofu apply -var-file=k8s.tfvars
+tofu apply
 # kubeconfig is now at: ./kubeconfig
 
 # STEP 2: Use immediately for emergency troubleshooting
