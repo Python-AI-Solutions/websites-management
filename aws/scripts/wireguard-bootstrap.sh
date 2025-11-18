@@ -18,7 +18,7 @@ trap cleanup EXIT
 
 sudo apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  wireguard iptables-persistent curl
+  wireguard iptables-persistent curl fail2ban
 
 sudo install -d -m 700 /etc/wireguard
 
@@ -51,22 +51,43 @@ else
   sudo systemctl enable --now wg-quick@wg0
 fi
 
-# Note: Removed ipset/geo-restriction logic per John's instructions
-# The security group now handles access control at the AWS level
+# Rate-limit the WireGuard listener to dampen brute-force/flood attempts
+configure_wireguard_firewall() {
+  local port="$1"
 
-allow_port() {
-  local proto="$1"
-  local port="$2"
-  local rule="INPUT -p ${proto} --dport ${port} -j ACCEPT"
-  
-  if ! sudo iptables -C ${rule} 2>/dev/null; then
-    sudo iptables -I ${rule}
+  # Remove any legacy accept-all rules for the port
+  sudo iptables -D INPUT -p udp --dport "${port}" -j ACCEPT 2>/dev/null || true
+
+  # Allow legitimate traffic with a generous global rate limit
+  if ! sudo iptables -C INPUT -p udp --dport "${port}" -m limit --limit 200/second --limit-burst 400 -j ACCEPT 2>/dev/null; then
+    sudo iptables -I INPUT -p udp --dport "${port}" -m limit --limit 200/second --limit-burst 400 -j ACCEPT
+  fi
+
+  # Drop abusive sources that exceed per-IP thresholds
+  if ! sudo iptables -C INPUT -p udp --dport "${port}" -m hashlimit --hashlimit-name wg-flood --hashlimit-mode srcip --hashlimit-above 100/second --hashlimit-burst 200 -j DROP 2>/dev/null; then
+    sudo iptables -A INPUT -p udp --dport "${port}" -m hashlimit --hashlimit-name wg-flood --hashlimit-mode srcip --hashlimit-above 100/second --hashlimit-burst 200 -j DROP
   fi
 }
 
-# Allow WireGuard port
 # NOTE: FRP is kept as emergency-only fallback, see aws/runbooks/FRP_EMERGENCY_ACCESS.md
-allow_port udp "${WG_PORT}"
+configure_wireguard_firewall "${WG_PORT}"
+
+# Harden SSH with fail2ban (protects bastion login surface)
+sudo tee /etc/fail2ban/jail.d/paas-hardening.conf >/dev/null <<'JAIL'
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled  = true
+port     = ssh
+logpath  = /var/log/auth.log
+backend  = systemd
+JAIL
+
+sudo systemctl enable --now fail2ban
+sudo systemctl restart fail2ban
 
 # Save iptables rules
 sudo sh -c "iptables-save > /etc/iptables/rules.v4"
@@ -81,7 +102,7 @@ for peer in peers:
     pubkey = peer["public_key"]
     allowed_ips = ",".join(peer.get("allowed_ips", []))
     keepalive = peer.get("persistent_keepalive", 25)
-    
+
     print(f"Adding peer: {name}")
     cmd = [
         "sudo", "wg", "set", "wg0",
@@ -90,7 +111,7 @@ for peer in peers:
     ]
     if keepalive:
         cmd.extend(["persistent-keepalive", str(keepalive)])
-    
+
     subprocess.run(cmd, check=True)
 '
 

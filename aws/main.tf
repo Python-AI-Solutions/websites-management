@@ -65,7 +65,7 @@ resource "aws_security_group" "jump_host" {
     from_port   = var.wireguard_listen_port
     to_port     = var.wireguard_listen_port
     protocol    = "udp"
-    cidr_blocks = var.wireguard_allowed_cidrs
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {

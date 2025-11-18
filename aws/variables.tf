@@ -86,15 +86,6 @@ variable "jump_host_port_7006_cidrs" {
   ]
 }
 
-variable "wireguard_allowed_cidrs" {
-  description = "CIDR blocks allowed to reach the WireGuard UDP listener on the bastion."
-  type        = list(string)
-  default = [
-    "109.76.78.109/32",
-    "223.190.84.183/32"
-  ]
-}
-
 variable "enable_frp_access" {
   description = "Set to true to expose FRP control/tunnel ports (7005/7006)."
   type        = bool

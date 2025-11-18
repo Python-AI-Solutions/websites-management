@@ -32,7 +32,7 @@ tofu plan
 
 The plan should report **no changes**. The `prevent_destroy` lifecycle flag on both resources ensures the instance and elastic IP cannot be destroyed accidentally. Update variables in `variables.tf` if you need to reflect changes to the underlying resources over time.
 
-The security group is now fully managed. SSH is pinned to the WireGuard /24 plus the two emergency home IPs, and the WireGuard UDP listener (51820) is restricted to `var.wireguard_allowed_cidrs` (defaults to the same two IPs). FRP is **disabled by default**—no ports are exposed until you set `enable_frp_access = true` in your vars and re-run `tofu apply`. When that flag is true, the plan adds the FRP control/tunnel rules (7005/7006) scoped to `var.jump_host_port_7005_cidrs` / `var.jump_host_port_7006_cidrs`.
+The security group is now fully managed. SSH is pinned to the WireGuard /24 plus the two emergency home IPs, and the WireGuard UDP listener (51820) remains open to the Internet (WireGuard handles mutual authentication). To reduce scanning risk, the bootstrap script now adds iptables rate-limiting for the WireGuard socket and installs Fail2ban to throttle SSH brute-force attempts. FRP is **disabled by default**—no ports are exposed until you set `enable_frp_access = true` and re-run `tofu apply`. When that flag is true, the plan adds the FRP control/tunnel rules (7005/7006) scoped to `var.jump_host_port_7005_cidrs` / `var.jump_host_port_7006_cidrs`.
 
 **Admin SSH alias (manual use):** Keep an entry such as `bastion-admin` in your `~/.ssh/config` so you can run privileged commands without remembering the public IP. Example:
 
@@ -48,7 +48,7 @@ All manual privileged commands should also run through this alias: `ssh bastion-
 
 ## WireGuard server
 
-The configuration now provisions WireGuard directly on the jump host. OpenTofu uploads `scripts/wireguard-bootstrap.sh` before running over SSH as `var.jump_host_admin_user`. The script installs WireGuard, writes `/etc/wireguard/wg0.conf` with `10.99.0.1/24` on port `51820`, enables IP forwarding, and leaves FRP untouched until you explicitly enable it via `enable_frp_access`. Only the CIDRs listed in `var.wireguard_allowed_cidrs` can reach UDP 51820.
+The configuration now provisions WireGuard directly on the jump host. OpenTofu uploads `scripts/wireguard-bootstrap.sh` before running over SSH as `var.jump_host_admin_user`. The script installs WireGuard, writes `/etc/wireguard/wg0.conf` with `10.99.0.1/24` on port `51820`, enables IP forwarding, configures iptables rate limits for the WireGuard socket, and installs Fail2ban to guard SSH. FRP stays untouched until you explicitly enable it via `enable_frp_access`.
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
