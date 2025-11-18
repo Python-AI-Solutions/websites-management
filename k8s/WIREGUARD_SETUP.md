@@ -104,7 +104,7 @@ The Debian host firewall is configured via Terraform with the following allowed 
 | 51820 | UDP | WireGuard VPN |
 
 Additional rules:
-- All traffic from WireGuard network (10.99.0.0/24) is allowed
+- Every allowed port listed above is limited to the WireGuard subnet (10.99.0.0/24)
 - Established connections are allowed
 - ICMP (ping) is allowed
 

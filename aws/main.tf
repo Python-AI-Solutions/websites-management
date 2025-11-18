@@ -61,19 +61,11 @@ resource "aws_security_group" "jump_host" {
   }
 
   ingress {
-    description = "Application access"
-    from_port   = 7005
-    to_port     = 7005
-    protocol    = "tcp"
-    cidr_blocks = var.jump_host_port_7005_cidrs
-  }
-
-  ingress {
     description = "WireGuard VPN"
     from_port   = var.wireguard_listen_port
     to_port     = var.wireguard_listen_port
     protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.wireguard_allowed_cidrs
   }
 
   egress {
@@ -89,6 +81,30 @@ resource "aws_security_group" "jump_host" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+resource "aws_security_group_rule" "frp_control" {
+  count             = var.enable_frp_access ? 1 : 0
+  type              = "ingress"
+  from_port         = 7005
+  to_port           = 7005
+  protocol          = "tcp"
+  security_group_id = aws_security_group.jump_host.id
+  cidr_blocks       = var.jump_host_port_7005_cidrs
+
+  description = "FRP control port"
+}
+
+resource "aws_security_group_rule" "frp_ssh" {
+  count             = var.enable_frp_access ? 1 : 0
+  type              = "ingress"
+  from_port         = 7006
+  to_port           = 7006
+  protocol          = "tcp"
+  security_group_id = aws_security_group.jump_host.id
+  cidr_blocks       = var.jump_host_port_7006_cidrs
+
+  description = "FRP SSH tunnel"
 }
 
 resource "null_resource" "wireguard_server" {

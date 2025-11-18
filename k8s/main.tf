@@ -408,10 +408,7 @@ resource "null_resource" "firewall_setup" {
         "# Allow configured ports - with special handling for SSH"
       ],
       [for port in var.debian_allowed_ports :
-        # SSH (port 22) ONLY from WireGuard, other ports from anywhere
-        port.port == 22 ?
-          "sudo iptables -A INPUT -s 10.99.0.0/24 -p ${port.protocol} --dport ${port.port} -m comment --comment '${port.comment} (WireGuard only)' -j ACCEPT" :
-          "sudo iptables -A INPUT -p ${port.protocol} --dport ${port.port} -m comment --comment '${port.comment}' -j ACCEPT"
+        "sudo iptables -A INPUT -s 10.99.0.0/24 -p ${port.protocol} --dport ${port.port} -m comment --comment '${port.comment} (WireGuard only)' -j ACCEPT"
       ],
       [
         "",
@@ -421,8 +418,6 @@ resource "null_resource" "firewall_setup" {
         ""
       ],
       [
-        "# Allow all traffic from WireGuard network",
-        "sudo iptables -A INPUT -s 10.99.0.0/24 -j ACCEPT",
         "",
         "# Save rules",
         "sudo sh -c 'iptables-save > /etc/iptables/rules.v4'",

@@ -21,6 +21,24 @@ FRP (Fast Reverse Proxy) is a **legacy fallback mechanism** for accessing the ba
 - FRP client binary (`frpc`) installed locally
 - Network access to FRP server (7005, 7006 TCP)
 - Bastion host must have FRP server (`frps`) running
+- You must originate traffic from one of the approved break-glass public IPs (`109.76.78.109/32` or `223.190.84.183/32`). All other addresses are blocked at the AWS security group.
+
+## Step 0: Permit FRP access via Terraform (break-glass only)
+
+1. Edit `aws/terraform.tfvars` (or pass CLI vars) and set:
+   ```hcl
+   enable_frp_access = true
+   ```
+   Optionally override `jump_host_port_7005_cidrs` / `jump_host_port_7006_cidrs` if different emergency IPs are needed.
+2. Apply the change:
+   ```bash
+   cd aws
+   tofu apply
+   ```
+   This adds the security-group rules for TCP 7005/7006.
+3. Continue with the steps below to start `frps` and establish the tunnel.
+
+⚠️ After the emergency, revert `enable_frp_access` to `false` and run `tofu apply` again to close the ports.
 
 ---
 
@@ -46,7 +64,7 @@ If any of these work, use WireGuard instead of this emergency procedure.
 
 ## Step 2: Enable FRP on Bastion (Admin Action)
 
-**This must be done by someone with bastion-admin SSH access:**
+**This must be done by someone with bastion-admin SSH access:** (SSH to port 22 is still permitted from the two break-glass public IPs, even if WireGuard is down.)
 
 ```bash
 # SSH to bastion
@@ -64,6 +82,7 @@ sudo ss -tlnp | grep frp
 # Expected output:
 #   LISTEN  0  128  0.0.0.0:7005  0.0.0.0:*  (FRP control port)
 #   LISTEN  0  128  0.0.0.0:7006  0.0.0.0:*  (FRP SSH tunnel)
+# Remember: AWS security group restricts both ports to the two break-glass IPs listed above.
 ```
 
 ---
@@ -164,6 +183,7 @@ ssh bastion-admin "sudo ss -tlnp | grep frp"
 
 # Verify FRP ports are open in security group
 aws ec2 describe-security-groups --query 'SecurityGroups[?GroupName==`bastion-sg`].IpPermissions[]'
+# Expected: TCP 7005 and 7006 only list 109.76.78.109/32 and 223.190.84.183/32
 ```
 
 ### SSH Through Tunnel Fails
@@ -234,6 +254,11 @@ kubectl get nodes
 ssh bastion-admin
 sudo systemctl stop frps
 sudo systemctl disable frps
+
+# Remove the Terraform exposure
+# (set enable_frp_access=false via terraform.tfvars or CLI var, then apply)
+cd aws
+tofu apply
 
 # Verify FRP ports are closed
 sudo ss -tlnp | grep frp

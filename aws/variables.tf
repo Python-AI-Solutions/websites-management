@@ -72,8 +72,33 @@ variable "jump_host_port_7005_cidrs" {
   description = "CIDR blocks allowed to access TCP port 7005 on the jump host."
   type        = list(string)
   default = [
-    "10.99.0.0/24"
+    "109.76.78.109/32",
+    "223.190.84.183/32"
   ]
+}
+
+variable "jump_host_port_7006_cidrs" {
+  description = "CIDR blocks allowed to access TCP port 7006 on the jump host (FRP SSH tunnel)."
+  type        = list(string)
+  default = [
+    "109.76.78.109/32",
+    "223.190.84.183/32"
+  ]
+}
+
+variable "wireguard_allowed_cidrs" {
+  description = "CIDR blocks allowed to reach the WireGuard UDP listener on the bastion."
+  type        = list(string)
+  default = [
+    "109.76.78.109/32",
+    "223.190.84.183/32"
+  ]
+}
+
+variable "enable_frp_access" {
+  description = "Set to true to expose FRP control/tunnel ports (7005/7006)."
+  type        = bool
+  default     = false
 }
 
 variable "jump_host_security_group_tags" {
