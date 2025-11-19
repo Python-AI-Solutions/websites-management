@@ -165,3 +165,23 @@ variable "wireguard_peers" {
   }))
   default = []
 }
+
+variable "jump_host_root_volume_type" {
+  description = "EBS volume type for jump host root volume (gp2, gp3, io1, io2, st1, sc1)"
+  type        = string
+  default     = "gp3"
+}
+
+variable "frp_token" {
+  description = "FRP authentication token (must match on server and client)"
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-production"
+}
+
+variable "jump_host_ssh_private_key" {
+  description = "SSH private key for accessing the jump host bastion"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
