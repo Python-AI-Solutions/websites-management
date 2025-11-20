@@ -270,7 +270,7 @@ resource "null_resource" "wireguard_setup" {
       private_key = var.debian_wireguard_private_key
       server_key  = var.wireguard_server_public_key
       bastion     = var.bastion_host
-      address     = "10.99.0.20/24"
+      address     = "10.99.0.2/24"
       port        = 51820
     }))
   }
@@ -311,7 +311,7 @@ resource "null_resource" "wireguard_setup" {
       "cat <<'EOF' | sudo tee /etc/wireguard/wg0.conf > /dev/null",
       "[Interface]",
       "PrivateKey = ${var.debian_wireguard_private_key}",
-      "Address = 10.99.0.20/24",
+      "Address = 10.99.0.2/24",
       "ListenPort = 51820",
       "",
       "[Peer]",
@@ -333,7 +333,7 @@ resource "null_resource" "wireguard_setup" {
       "sudo systemctl restart wg-quick@wg0 || sudo systemctl start wg-quick@wg0",
       "sleep 2",
       "sudo wg show",
-      "echo 'WireGuard setup complete. Debian host IP: 10.99.0.20'"
+      "echo 'WireGuard setup complete. Debian host IP: 10.99.0.2'"
     ]
   }
 }

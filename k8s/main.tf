@@ -57,18 +57,32 @@ terraform {
 # Default behavior: Enable FRP on first deployment, disable on subsequent
 # successful deployments (user can override with terraform.tfvars)
 locals {
-  # Health check: Try to determine if Debian should have FRP enabled
-  # In practice, operators set enable_frp_emergency in terraform.tfvars based on
-  # whether they can reach Debian via WireGuard. On first deployment (no access yet),
-  # they should set it to true. After Debian is configured and reachable, set to false.
+  # Health check placeholder – currently manual until automated probe is implemented.
   frp_health_check_enabled = var.enable_frp_emergency
 
   health_check_message = var.enable_frp_emergency ? (
     "⚠️  FRP EMERGENCY MODE ENABLED - Using reverse tunnel for Debian access"
-  ) : (
+    ) : (
     "✅ NORMAL MODE - Using WireGuard VPN for Debian access"
   )
+
+  deploy_debian     = var.deploy_debian_host ? { main = true } : {}
+  deploy_kubernetes = var.deploy_kubernetes_cluster ? { main = true } : {}
 }
+
+# ============================================================================
+# MODULE 0: Elastic IPs (persistent bastion EIP)
+# ============================================================================
+module "eips" {
+  source   = "./eips"
+  eip_tags = var.jump_host_eip_tags
+}
+
+# ============================================================================
+# LEGACY LOCAL FILES (Audit policy, encryption config, kubeadm config)
+# ============================================================================
+# These files are kept on disk for reference/runbooks. Manage them via Terraform
+# so existing state entries remain valid.
 
 # ============================================================================
 # MODULE 1: AWS Bastion (Jump Host + WireGuard Server)
@@ -89,69 +103,83 @@ module "aws_bastion" {
   jump_host_private_ip    = var.jump_host_private_ip
   jump_host_key_name      = var.jump_host_key_name
   jump_host_vpc_id        = var.jump_host_vpc_id
+  jump_host_admin_authorized_key = var.jump_host_admin_authorized_key
 
   # WireGuard Configuration
-  wireguard_address      = var.wireguard_address
-  wireguard_listen_port  = var.wireguard_listen_port
-  wireguard_peers        = var.wireguard_peers
+  wireguard_address             = var.wireguard_address
+  wireguard_listen_port         = var.wireguard_listen_port
+  wireguard_peers               = var.wireguard_peers
+  bastion_wireguard_private_key = var.bastion_wireguard_private_key
+
+  # Jump user
+  jump_host_jump_user            = var.jump_host_jump_user
+  jump_host_jump_user_public_key = var.jump_host_jump_user_public_key
 
   # FRP Configuration
-  enable_frp_access            = var.enable_frp_emergency
-  jump_host_port_7005_cidrs    = var.jump_host_port_7005_cidrs
-  jump_host_port_7006_cidrs    = var.jump_host_port_7006_cidrs
-  frp_server_port              = var.frp_server_port
-  frp_token                    = var.frp_token
+  enable_frp_access         = var.enable_frp_emergency
+  enable_frp_emergency      = var.enable_frp_emergency
+  jump_host_port_7005_cidrs = var.jump_host_port_7005_cidrs
+  jump_host_port_7006_cidrs = var.jump_host_port_7006_cidrs
+  frp_server_port           = var.frp_server_port
+  frp_ssh_proxy_port        = var.frp_ssh_proxy_port
+  frp_token                 = var.frp_token
 
   # Tags
-  jump_host_admin_user            = var.jump_host_admin_user
-  jump_host_security_group_name   = var.jump_host_security_group_name
-  jump_host_security_group_description = "Security group for jump host (bastion)"
-  jump_host_ssh_cidrs             = var.jump_host_ssh_cidrs
-  jump_host_tags                  = var.jump_host_tags
-  jump_host_eip_tags              = var.jump_host_eip_tags
-  jump_host_security_group_tags   = var.jump_host_security_group_tags
+  jump_host_admin_user                 = var.jump_host_admin_user
+  jump_host_security_group_name        = var.jump_host_security_group_name
+  jump_host_security_group_description = "launch-wizard-1 created 2024-11-25T14:25:31.878Z"
+  jump_host_ssh_cidrs                  = var.jump_host_ssh_cidrs
+  jump_host_tags                       = var.jump_host_tags
+  jump_host_eip_tags                   = var.jump_host_eip_tags
+  jump_host_security_group_tags        = var.jump_host_security_group_tags
 
   # Storage configuration
-  jump_host_root_volume_size              = var.jump_host_root_volume_size
-  jump_host_root_volume_type              = "gp3"
-  jump_host_root_volume_encrypted         = var.jump_host_root_volume_encrypted
-  jump_host_root_volume_kms_key_id        = var.jump_host_root_volume_kms_key_id
-  jump_host_root_volume_iops              = var.jump_host_root_volume_iops
-  jump_host_root_volume_throughput        = var.jump_host_root_volume_throughput
+  jump_host_root_volume_size       = var.jump_host_root_volume_size
+  jump_host_root_volume_type       = "gp3"
+  jump_host_root_volume_encrypted  = var.jump_host_root_volume_encrypted
+  jump_host_root_volume_kms_key_id = var.jump_host_root_volume_kms_key_id
+  jump_host_root_volume_iops       = var.jump_host_root_volume_iops
+  jump_host_root_volume_throughput = var.jump_host_root_volume_throughput
+
+  bastion_eip_allocation_id = module.eips.bastion_allocation_id
+  bastion_public_ip         = module.eips.bastion_public_ip
 }
 
 # ============================================================================
 # MODULE 2: Debian Host Configuration (VPN Peer + FRP Client)
 # ============================================================================
 # Provisions (via remote-exec through bastion jump host):
-# - WireGuard VPN interface with correct IP (10.99.0.20)
+# - WireGuard VPN interface with correct IP (10.99.0.2)
 # - FRP client for emergency access tunnel
 # - Port restrictions via iptables
 # - Verification of correct configuration
 #
 # IMPORTANT: This depends on AWS bastion being ready
 module "debian_host" {
-  source = "./debian"
+  for_each = local.deploy_debian
+  source   = "./debian"
 
   # Get bastion details from AWS module
-  bastion_public_ip             = module.aws_bastion.jump_host_public_ip
-  bastion_private_ip            = module.aws_bastion.jump_host_private_ip
-  bastion_ssh_user              = var.bastion_ssh_user
+  bastion_public_ip  = module.eips.bastion_public_ip
+  bastion_private_ip = module.aws_bastion.jump_host_private_ip
+  bastion_ssh_user   = var.bastion_ssh_user
+  bastion_wireguard_host = var.bastion_wireguard_host
 
   # Debian host connection details
-  debian_host_ip                = var.debian_host_ip
-  debian_ssh_user               = var.debian_ssh_user
-  debian_ssh_private_key_path   = var.debian_ssh_private_key_path
+  debian_host_ip  = var.debian_host_ip
+  debian_ssh_user = var.debian_ssh_user
 
   # WireGuard configuration for Debian
-  debian_wireguard_ip           = var.debian_wireguard_ip
-  debian_wireguard_private_key  = var.debian_wireguard_private_key
-  bastion_wireguard_public_key  = var.bastion_wireguard_public_key
-  wireguard_port                = var.wireguard_port
+  debian_wireguard_ip          = var.debian_wireguard_ip
+  debian_wireguard_private_key = var.debian_wireguard_private_key
+  bastion_wireguard_public_key = var.bastion_wireguard_public_key
+  wireguard_port               = var.wireguard_port
 
   # FRP configuration
-  frp_token                     = var.frp_token
-  frp_server_port               = var.frp_server_port
+  enable_frp_emergency = var.enable_frp_emergency
+  frp_token            = var.frp_token
+  frp_server_port      = var.frp_server_port
+  frp_ssh_proxy_port   = var.frp_ssh_proxy_port
 
   # Ensure AWS bastion is fully ready before configuring Debian
   depends_on = [module.aws_bastion]
@@ -169,30 +197,31 @@ module "debian_host" {
 #
 # IMPORTANT: This depends on Debian being fully configured and accessible
 module "kubernetes_cluster" {
-  source = "./kubernetes"
+  for_each = local.deploy_kubernetes
+  source   = "./kubernetes"
 
   # Get Debian details from debian module (for SSH access)
-  host                  = module.debian_host.debian_wireguard_ip
-  host_port             = 7006  # SSH via FRP if needed
-  ssh_user              = var.debian_ssh_user
-  bastion_host          = module.aws_bastion.jump_host_public_ip
-  bastion_user          = var.bastion_ssh_user
-  bastion_port          = 22
+  host         = var.debian_host_ip
+  host_port    = 22
+  ssh_user     = var.debian_ssh_user
+  bastion_host = var.bastion_wireguard_host
+  bastion_user = var.bastion_ssh_user
+  bastion_port = 22
 
   # Kubernetes cluster configuration
   cluster_name           = var.cluster_name
   kubernetes_version     = var.kubernetes_version
-  pod_cidr              = var.pod_cidr
-  service_cidr          = var.service_cidr
+  pod_cidr               = var.pod_cidr
+  service_cidr           = var.service_cidr
   control_plane_endpoint = var.control_plane_endpoint
 
   # Kubeconfig output
   kubeconfig_local_path = var.kubeconfig_local_path
 
   # Helm chart versions
-  cilium_chart_version           = var.cilium_chart_version
-  traefik_chart_version          = var.traefik_chart_version
-  cert_manager_chart_version     = var.cert_manager_chart_version
+  cilium_chart_version                 = var.cilium_chart_version
+  traefik_chart_version                = var.traefik_chart_version
+  cert_manager_chart_version           = var.cert_manager_chart_version
   local_path_provisioner_chart_version = var.local_path_provisioner_chart_version
 
   # ACME/Let's Encrypt configuration
@@ -207,6 +236,5 @@ module "kubernetes_cluster" {
   debian_allowed_ports = var.debian_allowed_ports
 
   # Ensure Debian is fully configured before setting up K8s
-  depends_on = [module.debian_host]
+  depends_on = [module.aws_bastion]
 }
-

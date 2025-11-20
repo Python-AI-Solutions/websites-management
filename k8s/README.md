@@ -46,11 +46,8 @@ ssh-add -L
 cd k8s
 tofu init
 
-# Ensure SSH keys are loaded
-ssh-add -L  # Verify keys are present
-
 # Optional: generate terraform.tfvars overrides from your SSH config
-./ssh-config-helper.sh k8s-host
+./ssh-config-helper.sh debian
 
 # Review terraform.tfvars if you need to override the baked-in defaults
 ```
@@ -477,7 +474,7 @@ You → WireGuard VPN Endpoint (AWS Bastion:51820)
       ↓
      WireGuard Tunnel (encrypted)
       ↓
-Debian Host (Internal IP: 10.99.0.20) ← SSH (22) from 10.99.0.0/24 ONLY
+Debian Host (Internal IP: 10.99.0.2) ← SSH (22) from 10.99.0.0/24 ONLY
 ```
 
 ### Verify SSH→WireGuard Restriction
@@ -486,7 +483,7 @@ Debian Host (Internal IP: 10.99.0.20) ← SSH (22) from 10.99.0.0/24 ONLY
 
 ```bash
 # From AWS Bastion (has WireGuard connection):
-ssh debian@10.99.0.20
+ssh debian@10.99.0.2
 # ✅ Success - you're on WireGuard network
 ```
 
@@ -529,7 +526,7 @@ iptables -A INPUT -s 10.99.0.0/24 -p tcp --dport 22 -m comment --comment 'SSH (W
 ```
 
 **WireGuard Subnet:**
-- Debian host: `10.99.0.20`
+- Debian host: `10.99.0.2`
 - Server: `10.99.0.1`
 - Network: `10.99.0.0/24`
 

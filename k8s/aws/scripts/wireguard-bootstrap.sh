@@ -3,6 +3,24 @@ set -euxo pipefail
 
 WG_ADDRESS="${WG_ADDRESS:-10.99.0.1/24}"
 WG_PORT="${WG_PORT:-51820}"
+WG_SERVER_PRIVATE_KEY_B64="${WG_SERVER_PRIVATE_KEY_B64:-}"
+JUMP_USER="${JUMP_USER:-newuser}"
+JUMP_USER_KEY_B64="${JUMP_USER_KEY_B64:-}"
+if [ -n "${WG_SERVER_PRIVATE_KEY_B64}" ]; then
+  WG_SERVER_PRIVATE_KEY="$(echo "${WG_SERVER_PRIVATE_KEY_B64}" | base64 --decode)"
+else
+  WG_SERVER_PRIVATE_KEY=""
+fi
+if [ -n "${JUMP_USER_KEY_B64}" ]; then
+  JUMP_USER_KEY="$(echo "${JUMP_USER_KEY_B64}" | base64 --decode)"
+else
+  JUMP_USER_KEY=""
+fi
+
+if [ -z "${JUMP_USER_KEY}" ]; then
+  echo "JUMP_USER_KEY must be provided" >&2
+  exit 1
+fi
 TMP_DIR="$(mktemp -d)"
 
 if [ -n "${WG_PEERS_B64:-}" ]; then
@@ -20,9 +38,25 @@ sudo apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   wireguard iptables-persistent curl fail2ban
 
+# Ensure jump user exists with the provided SSH key
+if id -u "${JUMP_USER}" >/dev/null 2>&1; then
+  sudo usermod -s /bin/bash "${JUMP_USER}" >/dev/null 2>&1 || true
+else
+  sudo useradd -m -s /bin/bash "${JUMP_USER}"
+fi
+
+sudo mkdir -p "/home/${JUMP_USER}/.ssh"
+sudo sh -c "printf '%s\n' '${JUMP_USER_KEY}' > /home/${JUMP_USER}/.ssh/authorized_keys"
+sudo chmod 700 "/home/${JUMP_USER}/.ssh"
+sudo chmod 600 "/home/${JUMP_USER}/.ssh/authorized_keys"
+sudo chown -R "${JUMP_USER}:${JUMP_USER}" "/home/${JUMP_USER}/.ssh"
+
 sudo install -d -m 700 /etc/wireguard
 
-if ! sudo test -f /etc/wireguard/server.key; then
+if [ -n "${WG_SERVER_PRIVATE_KEY}" ]; then
+  sudo sh -c "umask 077 && printf '%s\n' '${WG_SERVER_PRIVATE_KEY}' > /etc/wireguard/server.key"
+  sudo sh -c 'wg pubkey < /etc/wireguard/server.key > /etc/wireguard/server.pub'
+elif ! sudo test -f /etc/wireguard/server.key; then
   sudo sh -c 'umask 077 && wg genkey > /etc/wireguard/server.key'
   sudo sh -c 'wg pubkey < /etc/wireguard/server.key > /etc/wireguard/server.pub'
 fi

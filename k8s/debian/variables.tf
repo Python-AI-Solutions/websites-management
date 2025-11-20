@@ -3,34 +3,28 @@
 variable "debian_host_ip" {
   description = "IP address or hostname of Debian host (for SSH access)"
   type        = string
-  # Example: "203.0.113.42" or "debian.example.com"
+  default     = "10.99.0.2"
 }
 
 variable "debian_ssh_user" {
   description = "SSH user for Debian host"
   type        = string
-  default     = "ubuntu"
-}
-
-variable "debian_ssh_private_key_path" {
-  description = "Path to SSH private key for Debian host access"
-  type        = string
-  # Example: "~/.ssh/debian_key"
+  default     = "sysadmin"
 }
 
 variable "debian_wireguard_ip" {
-  description = "WireGuard VPN IP for Debian host (MUST be 10.99.0.20)"
+  description = "WireGuard VPN IP for Debian host (MUST be 10.99.0.2)"
   type        = string
-  default     = "10.99.0.20"
+  default     = "10.99.0.2"
 
   validation {
-    condition     = var.debian_wireguard_ip == "10.99.0.20"
-    error_message = "Debian WireGuard IP must be 10.99.0.20 (for VPN peer registration)"
+    condition     = var.debian_wireguard_ip == "10.99.0.2"
+    error_message = "Debian WireGuard IP must be 10.99.0.2 for peer registration)"
   }
 }
 
 variable "debian_wireguard_private_key" {
-  description = "WireGuard private key for Debian host"
+  description = "WireGuard private key for Debian"
   type        = string
   sensitive   = true
   # Generate with: wg genkey
@@ -51,13 +45,19 @@ variable "bastion_private_ip" {
 variable "bastion_ssh_user" {
   description = "SSH user for bastion host"
   type        = string
-  default     = "ubuntu"
+  default     = "admin"
 }
 
 variable "bastion_wireguard_public_key" {
   description = "WireGuard public key of bastion"
   type        = string
-  # Generate with: wg pubkey (from bastion's private key)
+  default     = "39oLcmw2XRX57PguWfsqlZmURajuRJQiUUj+mvqIWhU="
+}
+
+variable "bastion_wireguard_host" {
+  description = "Bastion IP inside the WireGuard network (used as SSH jump host)"
+  type        = string
+  default     = "10.99.0.1"
 }
 
 variable "wireguard_port" {
@@ -79,14 +79,31 @@ variable "frp_token" {
 }
 
 variable "frp_server_port" {
-  description = "FRP server port (on bastion)"
+  description = "FRP server control port (on bastion)"
   type        = number
-  default     = 7000
+  default     = 7005
 
   validation {
     condition     = var.frp_server_port > 1000 && var.frp_server_port < 65535
     error_message = "FRP server port must be between 1000 and 65535"
   }
+}
+
+variable "frp_ssh_proxy_port" {
+  description = "FRP remote port that forwards Debian SSH through the bastion"
+  type        = number
+  default     = 7006
+
+  validation {
+    condition     = var.frp_ssh_proxy_port > 1000 && var.frp_ssh_proxy_port < 65535
+    error_message = "FRP SSH proxy port must be between 1000 and 65535"
+  }
+}
+
+variable "enable_frp_emergency" {
+  description = "Whether FRP emergency mode is enabled (controls documentation/outputs)"
+  type        = bool
+  default     = false
 }
 
 variable "tags" {

@@ -1,126 +1,94 @@
-# Cloudflare Infrastructure with OpenTofu
+# Infrastructure as Code Specification
 
-This repository manages Cloudflare infrastructure for `pythonaisolutions.com` with OpenTofu, orchestrated by [Pixi](https://pixi.build/). It provides Infrastructure as Code for:
+This repository manages the full lifecycle of the bastion (AWS jump host), VPN fabric, Debian host bootstrap, and Kubernetes cluster. The goal is a repeatable, idempotent workflow driven by OpenTofu so that any `tofu apply` can re-establish the desired state even after manual misconfiguration.
 
-- **DNS zone management** - Migrating from Register365 to Cloudflare
-- **Cloudflare Pages projects** - Deploying static sites with automatic HTTPS
-- **Google Workspace email** - Maintaining zero downtime for email services
+## Guiding Principles
 
-## Quick Start
-
-**New to this repo?**
-- DNS migration: See [Migration Guide](docs/migration-guide.md)
-- Add a new static site: See [Pages Quick Start](docs/pages-quick-start.md)
-- Full Pages documentation: See [Cloudflare Pages IaC](docs/cloudflare-pages-iac.md)
-
-## Prerequisites
-- [OpenTofu](https://opentofu.org/) 1.7.0+ (installed via Homebrew: `brew install opentofu`)
-- [Pixi](https://prefix.dev/docs/pixi/) (install via `curl -fsSL https://pixi.sh/install.sh | bash`)
-- A Cloudflare API token with **Zone:DNS:Edit** permissions on `pythonaisolutions.com`
-- Cloudflare account ID (get it via `bash scripts/get-account-id.sh`)
-
-## One-time setup
-1. Copy `.env.example` to `.env` and populate your secrets:
-   ```bash
-   cp .env.example .env
+1. **Single configuration file** – All environment-specific values live in `k8s/terraform.tfvars`. Examples:
+   ```hcl
+   aws_region                 = "us-east-1"
+   jump_host_subnet_id        = "subnet-..."
+   jump_host_vpc_id           = "vpc-..."
+   debian_wireguard_private_key = "..."
+   frp_token                    = "..."
+   enable_frp_emergency         = false
+   deploy_debian_host           = true
+   deploy_kubernetes_cluster    = true
    ```
-   At minimum set `CLOUDFLARE_API_TOKEN`. You can also pre-set DMARC/SPF defaults here.
-2. Review the current DNS entries in `envs/prod.tfvars` and replace every `TODO` placeholder with the authoritative values (see notes below).
-3. If you maintain a separate staging footprint, update `envs/staging.tfvars` accordingly. It defaults to the production values so you can quickly clone records.
+   A future phase will migrate secrets (WireGuard key, FRP token) to Google Secret Manager; until then, keep the tfvars file encrypted/protected.
 
-## Working with OpenTofu
+2. **Elastic IP persistence** – The bastion EIP is managed by the `k8s/eips` module. Destroying the bastion never releases the allocation; apply phases automatically associate the instance with the persistent EIP output by that module.
 
-Common Pixi tasks:
+3. **Pinned WireGuard identity** – The bastion’s WireGuard private/public key pair lives in `k8s/terraform.tfvars` (`bastion_wireguard_private_key` / `bastion_wireguard_public_key`) and is pushed down by the bootstrap script. If the instance is rebuilt, the key pair stays the same so Debian and laptops don’t need new configs.
 
-```bash
-# Initialize OpenTofu
-pixi run init
+4. **Bootstrap SSH tightening** – Use `jump_host_bootstrap_ssh_cidrs` for any public CIDRs that need SSH during provisioning. Terraform temporarily authorizes them (via AWS CLI) before the WireGuard bootstrap runs, and automatically revokes them once the VPN is up. The steady-state security group only allows SSH from `10.99.0.0/24`.
 
-# Work with workspaces
-pixi run workspace-staging    # create/select the staging workspace
-pixi run workspace-prod       # create/select the prod workspace
+5. **FRP usage pattern** – The Debian FRP client is always enabled so it can immediately reconnect when the bastion-side FRP server is toggled on. The bastion’s security group keeps SSH closed; we rely on WireGuard for normal access, and only when `enable_frp_emergency=true` do we open ports 7005/7006 and start `frps` for break-glass access.
 
-# Plan changes
-pixi run plan-staging         # writes root/tfplan-staging.tfplan
-pixi run plan-prod           # writes root/tfplan-prod.tfplan
+6. **Health-driven workflow** – Each apply phase verifies reachability:
+   - **Bastion phase**: `module.aws_bastion` provisions EC2 + SG + WireGuard server + (optional) FRP.
+   - **Debian phase**: `module.debian_host` stays enabled and ensures WireGuard/FRP/iptables on the Debian host. If SSH via WireGuard fails, the operator sets `enable_frp_emergency=true`, re-applies, and then reverts to false.
+   - **Kubernetes phase**: `module.kubernetes_cluster` assumes the Debian host is reachable; failure indicates the previous phase must be fixed.
 
-# Apply changes
-pixi run apply-staging       # apply staging changes
-pixi run apply-prod          # apply prod changes
+7. **Idempotence** – Re-running `tofu apply` must converge the system even if someone edited configs manually. For example, if the bastion `wg0.conf` lost a peer, the WireGuard provisioner re-uploads the config with the authoritative list from `var.wireguard_peers`. If Debian’s WireGuard IP drifts (10.99.0.20 vs 10.99.0.2) or the server key changes, Terraform rewrites both sides back to the canonical values before proceeding.
 
-# Verify DNS after migration
-pixi run verify-dns          # check DNS records and website accessibility
+8. **Local laptop alignment** – Each operator keeps their `~/.config/wireguard/<peer>.conf` in sync with the tfvars values. If multiple people (e.g., John and Sumit) share the bastion, make sure *both* laptop public keys and IP assignments live in `wireguard_peers`. When either of you runs `tofu apply`, the WireGuard server is reset to match that list—if a peer is missing, it gets dropped from `/etc/wireguard/wg0.conf`.
 
-# Code quality
-pixi run fmt                 # format all .tf files
-pixi run validate            # validate configuration
-pixi run lint                # run tflint
-```
+## Desired End-to-End Workflow
 
-The same tasks power CI workflows, so local and GitHub Actions runs stay identical.
+1. **Prepare `k8s/terraform.tfvars`** with VPC/subnet IDs, the EIP allocation ID, WireGuard keys, FRP token, and set:
+   ```hcl
+   enable_frp_emergency      = false
+   deploy_debian_host        = true
+   deploy_kubernetes_cluster = true
+   ```
+2. **Bootstrap bastion (idempotent)**
+   ```bash
+   cd k8s
+   tofu apply -target=module.eips        # first time only, or import existing EIP
+   tofu apply -target=module.aws_bastion # provisions EC2 + WireGuard + optional FRP
+   ```
+   This ensures the bastion and the operator’s laptop are on the same VPN subnet; if the laptop config mismatches, `wg show` will show no handshake and the operator updates their local config before proceeding.
 
-## Managing DNS data
-DNS records live in two variables:
-- `apex_records` – A/AAAA/TXT/CAA/SRV definitions for the zone apex (`@`).
-- `subdomain_records` – Per-subdomain bundles (A, CNAME, NS, TXT, MX, SRV) keyed by relative hostname.
+3. **Repair Debian host (automatic)**
+   - Leave `deploy_debian_host=true`. Terraform connects via WireGuard; if unreachable, operator toggles `enable_frp_emergency=true` and re-applies to enable FRP until the host is fixed.
+   - The module enforces `/etc/wireguard/wg0.conf`, restarts `wg-quick@wg0`, installs FRP client, and applies iptables rules.
+   - Once successful, operator sets `enable_frp_emergency=false` and applies again (closing FRP ports).
 
-**Before migration**, update these placeholders in `envs/prod.tfvars`:
-- `google-site-verification=TODO_replace_with_token` – Get from Google Search Console
-- GitHub Pages challenge records will need to be regenerated after migration (see [Migration Guide](docs/migration-guide.md))
+4. **Install Kubernetes**
+   - With Debian healthy, `module.kubernetes_cluster` installs containerd, kubeadm, networking, and addons.
+   - Outputs expose kubeconfig and connection details; operators run `export KUBECONFIG=...` and verify the cluster.
 
-**After migrating to Cloudflare**, GitHub will provide new challenge values when you re-add custom domains.
+5. **Ongoing operations** – Any future `tofu apply` re-validates each phase; if the bastion WireGuard config drifts, it’s rewritten; if Debian goes offline, Terraform fails early and the operator re-enables FRP; if Kubernetes needs upgrades, version bumps happen via variables. Before each apply, confirm:
+   - `~/.config/wireguard/john.conf` matches `k8s/terraform.tfvars` (public key + endpoint).
+   - `wg show` on the laptop reports a recent handshake with `10.99.0.1`.
+   - `ssh bastion-admin` works using the per-host `known_hosts.paijump` file.
 
-## Google Workspace
-The `google-workspace-email` module provisions:
-- MX records for Gmail
-- SPF TXT (`v=spf1 include:_spf.google.com ~all` by default)
-- DMARC TXT at `_dmarc`
-- Optional Google site verification TXT
-- DKIM placeholders (update once Google issues active selectors)
+## Future Enhancements
+- Implement a health probe (e.g., null_resource with `local-exec`) to automatically toggle FRP when WireGuard is down.
+- Migrate sensitive variables to Google Secret Manager and reference them via `terraform-provider-google` data sources.
+- Provide a small local script to regenerate the laptop WireGuard config and test connectivity pre-apply. *(Initial versions live under `scripts/refresh_wireguard.py` and `scripts/vpn_health_check.py`; future work may fold them into a single CLI.)*
 
-See `docs/google-workspace-setup.md` for the detailed checklist, including how to supply DKIM values after you migrate.
+## Helper Scripts
+- `python scripts/refresh_wireguard.py --peer <name>` – regenerates `~/.config/wireguard/<name>.conf` from `k8s/terraform.tfvars` and (optionally) restarts the tunnel with `--apply`. Use this whenever you change `wireguard_peers`, the bastion IP, or the server key.
+- `python scripts/vpn_health_check.py` – pings `10.99.0.1`, then runs `ssh bastion-admin` and `ssh debian-vpn` to confirm that the WireGuard path is healthy before (or after) a `tofu apply`.
 
-## Cloudflare Pages (Static Sites)
+> **Note:** The bootstrap/lockdown helpers rely on the AWS CLI (matching your Terraform credentials) to add/revoke temporary ingress rules whenever `jump_host_bootstrap_ssh_cidrs` is non-empty.
 
-This repository manages Cloudflare Pages projects via Infrastructure as Code. All static sites are configured in `envs/prod.tfvars` under `pages_projects`.
+## SSH Host Reference
 
-### Add a New Site (Quick)
+- `bastion` – `newuser@10.99.0.1` via WireGuard (key: `~/.ssh/jumpproxy`). Use this for routine bastion access once your laptop tunnel is up.
+- `bastion-admin` – `admin@10.99.0.1` via WireGuard (key: `~/.ssh/id_ed25519`). Reserved for provisioning/maintenance (Terraform connects as this user).
+- `bastion-admin-external` – `admin@3.82.253.109`. Only useful when you temporarily allow public SSH (e.g., during bootstrap or FRP emergency). Otherwise blocked by the SG after lockdown.
+- `debian-vpn` – `sysadmin@10.99.0.2` through the bastion jump host (`bastion-admin`). Works whenever the WireGuard fabric is healthy; this is the normal path into Debian.
+- `debian-frp` – `sysadmin@localhost:7006` tunneled through `bastion`. Only works when `enable_frp_emergency=true` (the bastion FRP server is running).
+- `debian-frp-external` – same as above, but via `bastion-admin-external` for situations where your laptop can’t reach the VPN network at all.
+- `debian-local` – `sysadmin@192.168.1.123` on the LAN. Only reachable when you manually open iptables for local access (e.g., via console work).
 
-```bash
-# Automated setup
-./scripts/setup-new-site.sh PROJECT_NAME SUBDOMAIN "BUILD_COMMAND" "BUILD_DIR"
+> **Note:** The automatic SSH bootstrap/lockdown flow requires the AWS CLI to be available in your shell environment (same credentials/profile Terraform uses), because Terraform invokes `aws ec2 authorize-security-group-ingress` / `revoke-security-group-ingress` under the hood.
 
-# Example
-./scripts/setup-new-site.sh company-handbook handbook "pixi run build" "_site"
+## Operational Notes / Gotchas
 
-# Apply infrastructure
-pixi run plan-prod && pixi run apply-prod
-
-# Add GitHub secret
-./scripts/add-github-secret.sh PROJECT_NAME
-
-# Copy workflow template to site repository
-cp .github/workflows/templates/cloudflare-pages-deploy.yml \
-   sites/PROJECT_NAME/.github/workflows/deploy.yml
-```
-
-See [Pages Quick Start](docs/pages-quick-start.md) for full instructions.
-
-### Current Sites
-
-| Project | Domain | Status |
-|---------|--------|--------|
-| hih-presentation | presentations.pythonaisolutions.com | ✅ Configured |
-| pythonaisolutions-website | www.pythonaisolutions.com | ✅ Configured |
-| company-handbook | handbook.pythonaisolutions.com | ✅ Configured |
-| no-strings-resume | resume.pythonaisolutions.com | ✅ Configured |
-
-## CI/CD
-GitHub Actions (`.github/workflows/ci.yml`) runs:
-- **Plan** on pull requests – defaults to the `staging` workspace unless you add a `workspace:prod` label, and uploads plan artifacts.
-- **Apply** on pushes to `main` – runs against the `prod` workspace under the protected `prod` environment, requiring manual approval before touching live DNS.
-
-## Next steps
-- Verify every placeholder in `envs/prod.tfvars` against the registrar before flipping the nameservers.
-- Decide whether you need distinct staging DNS and populate `envs/staging.tfvars`.
-- When ready to migrate state to a remote backend (S3/R2), edit the commented block in `root/versions.tf`.
+- **Do not change WireGuard keys on the servers manually.** If you rotate keys, update `k8s/terraform.tfvars` first and let OpenTofu push the new values everywhere (bastion, Debian, laptop config). Mismatched keys were the main reason prior attempts failed.
+- **Debian must keep `frpc` enabled.** The client service stays running even when the bastion-side FRP server is off; when `enable_frp_emergency=true`, the server port opens and the tunnel connects automatically. Disabling `frpc` means “FRP on” applies will never succeed.
+- **Laptop/bastion SSH config relies on `~/.ssh/known_hosts.paijump`.** When the bastion is rebuilt, seed the new host keys with `ssh-keyscan 10.99.0.1 10.99.0.2 >> ~/.ssh/known_hosts.paijump` before attempting JumpHost connections; otherwise strict host checking will hang applies.

@@ -28,35 +28,14 @@ variable "enable_frp_emergency" {
 }
 
 variable "frp_server_port" {
-  description = "FRP server listening port (default: 7000)"
+  description = "FRP server control port (default: 7005)"
   type        = number
-  default     = 7000
+  default     = 7005
 
   validation {
     condition     = var.frp_server_port > 1000 && var.frp_server_port < 65535
     error_message = "FRP server port must be between 1000 and 65535"
   }
-}
-
-variable "frp_server_token" {
-  description = "FRP authentication token between server and client"
-  type        = string
-  default     = "change-me-in-production"
-  sensitive   = true
-}
-
-# Security group rule: FRP server port (emergency access only)
-# Opens ONLY when enable_frp_emergency = true
-resource "aws_security_group_rule" "frp_server" {
-  count             = var.enable_frp_emergency ? 1 : 0
-  type              = "ingress"
-  from_port         = var.frp_server_port
-  to_port           = var.frp_server_port
-  protocol          = "tcp"
-  security_group_id = aws_security_group.jump_host.id
-  cidr_blocks       = ["0.0.0.0/0"]  # Debian connects from anywhere
-
-  description = "FRP server port - EMERGENCY ONLY, auto-managed by tofu health check"
 }
 
 # Null resource to manage FRP server status on bastion
@@ -77,47 +56,44 @@ resource "null_resource" "frp_server_manage" {
       "  sudo mv frp_0.50.0_linux_amd64/frps /usr/local/bin/",
       "  rm -rf frp_0.50.0_linux_amd64*",
       "fi",
-      "",
+      "sudo mkdir -p /etc/frp",
+      "sudo chmod 755 /etc/frp",
+      "sudo mkdir -p /var/log/frp",
       "# Create FRP server config",
       "cat << 'FRPCONF' | sudo tee /etc/frp/frps.ini > /dev/null",
       "[common]",
       "bind_port = ${var.frp_server_port}",
-      "token = ${var.frp_server_token}",
+      "token = ${var.frp_token}",
       "log_file = /var/log/frp/frps.log",
       "log_level = info",
       "FRPCONF",
-      "",
       "# Create systemd service for frp server",
       "cat << 'FRPSVC' | sudo tee /etc/systemd/system/frps.service > /dev/null",
       "[Unit]",
       "Description=FRP Server",
       "After=network.target",
-      "",
       "[Service]",
       "Type=simple",
       "ExecStart=/usr/local/bin/frps -c /etc/frp/frps.ini",
       "Restart=always",
       "RestartSec=5",
-      "",
       "[Install]",
       "WantedBy=multi-user.target",
       "FRPSVC",
-      "",
       "# Start FRP server",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable frps",
       "sudo systemctl start frps",
       "echo 'FRP server started on port ${var.frp_server_port}'",
-      "sleep 2",
-      "sudo systemctl status frps"
+      "sleep 2"
     ]
 
     connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.jump_host_ssh_private_key)
-      host        = aws_instance.jump_host.public_ip
-      timeout     = "5m"
+      type    = "ssh"
+      user    = var.jump_host_admin_user
+      host    = aws_instance.jump_host.public_ip
+      agent   = true
+      timeout = "5m"
     }
   }
 
@@ -125,7 +101,7 @@ resource "null_resource" "frp_server_manage" {
     frp_enabled = var.enable_frp_emergency
   }
 
-  depends_on = [aws_security_group_rule.frp_server]
+  depends_on = [aws_security_group.jump_host]
 }
 
 # Null resource to disable FRP server when not needed
@@ -144,11 +120,11 @@ resource "null_resource" "frp_server_disable" {
     ]
 
     connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.jump_host_ssh_private_key)
-      host        = aws_instance.jump_host.public_ip
-      timeout     = "2m"
+      type    = "ssh"
+      user    = var.jump_host_admin_user
+      host    = aws_instance.jump_host.public_ip
+      agent   = true
+      timeout = "2m"
     }
   }
 
@@ -166,7 +142,7 @@ output "frp_status" {
     enabled      = var.enable_frp_emergency
     server_port  = var.enable_frp_emergency ? var.frp_server_port : null
     bastion_ip   = aws_instance.jump_host.public_ip
-    emergency_access = var.enable_frp_emergency ? "Enabled - Use: ssh -J ubuntu@${aws_instance.jump_host.public_ip} ubuntu@10.99.0.20" : "Disabled (normal WireGuard access)"
+    emergency_access = var.enable_frp_emergency ? "Enabled - Use: ssh -J ubuntu@${aws_instance.jump_host.public_ip} ubuntu@10.99.0.2" : "Disabled (normal WireGuard access)"
   }
 }
 
