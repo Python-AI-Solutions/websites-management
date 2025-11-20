@@ -174,6 +174,14 @@ module "debian_host" {
   debian_wireguard_private_key = var.debian_wireguard_private_key
   bastion_wireguard_public_key = var.bastion_wireguard_public_key
   wireguard_port               = var.wireguard_port
+  # Extract admin CIDRs from wireguard_peers (exclude debian-host itself) + bastion
+  debian_wireguard_admin_cidrs = concat(
+    ["10.99.0.1/32"],  # bastion WireGuard IP
+    flatten([
+      for peer in var.wireguard_peers : peer.allowed_ips
+      if peer.name != "debian-host"
+    ])
+  )
 
   # FRP configuration
   enable_frp_emergency = var.enable_frp_emergency

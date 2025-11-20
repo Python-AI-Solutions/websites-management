@@ -71,6 +71,12 @@ variable "wireguard_port" {
   }
 }
 
+variable "debian_wireguard_admin_cidrs" {
+  description = "List of WireGuard /32s that should be allowed to SSH to Debian (e.g., bastion + laptop peers)."
+  type        = list(string)
+  default     = ["10.99.0.1/32"]
+}
+
 variable "frp_token" {
   description = "FRP authentication token (must match bastion FRP server token)"
   type        = string

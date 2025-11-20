@@ -41,7 +41,6 @@ resource "null_resource" "debian_wireguard_config" {
       "[Interface]",
       "PrivateKey = ${var.debian_wireguard_private_key}",
       "Address = ${var.debian_wireguard_ip}/32",
-      "DNS = 8.8.8.8 8.8.4.4",
       "# Peer: AWS Bastion",
       "[Peer]",
       "PublicKey = ${var.bastion_wireguard_public_key}",
@@ -190,15 +189,18 @@ resource "null_resource" "debian_frp_client" {
 # Port restrictions via iptables
 resource "null_resource" "debian_port_restrictions" {
   provisioner "remote-exec" {
-    inline = [
+    inline = concat([
       "set -e",
       "echo '=========================================='",
       "echo 'DEBIAN HOST CONFIGURATION - PORT SECURITY'",
       "echo '=========================================='",
       "echo '[1/2] Setting up firewall rules...'",
       "# Note: This is basic iptables. Consider using ufw or firewalld for persistence",
-      "echo 'SSH - Allow from bastion only'",
+      "echo 'SSH - Allow from bastion and VPN peers'",
       "sudo iptables -I INPUT -p tcp --dport 22 -s ${var.bastion_private_ip} -j ACCEPT || true",
+      ],
+      [for peer_cidr in var.debian_wireguard_admin_cidrs : "sudo iptables -I INPUT -p tcp --dport 22 -s ${peer_cidr} -j ACCEPT || true"],
+      [
       "sudo iptables -I INPUT -p tcp --dport 22 -j DROP || true",
       "echo 'WireGuard - Allow from anywhere'",
       "sudo iptables -I INPUT -p udp --dport ${var.wireguard_port} -j ACCEPT || true",
@@ -211,7 +213,7 @@ resource "null_resource" "debian_port_restrictions" {
       "echo '=========================================='",
       "echo 'PORT SECURITY CONFIGURATION COMPLETE'",
       "echo '=========================================='",
-    ]
+    ])
 
     connection {
       type         = "ssh"
