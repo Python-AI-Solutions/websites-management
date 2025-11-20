@@ -197,7 +197,6 @@ resource "null_resource" "debian_port_restrictions" {
       "echo '[1/2] Setting up firewall rules...'",
       "# Note: This is basic iptables. Consider using ufw or firewalld for persistence",
       "echo 'SSH - Allow from bastion and VPN peers'",
-      "sudo iptables -I INPUT -p tcp --dport 22 -s ${var.bastion_private_ip} -j ACCEPT || true",
       ],
       [for peer_cidr in var.debian_wireguard_admin_cidrs : "sudo iptables -I INPUT -p tcp --dport 22 -s ${peer_cidr} -j ACCEPT || true"],
       [
