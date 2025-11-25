@@ -699,7 +699,7 @@ resource "null_resource" "k8s_init" {
       "EOF",
       "  echo '✓ Patches prepared in /etc/kubernetes/patches'",
       "  echo 'Running kubeadm init with clean configuration (patches applied post-init)...'",
-      "  sudo kubeadm init --config /tmp/kubeadm-config.yaml --skip-phases=addon/coredns 2>&1 | head -100",
+      "  sudo kubeadm init --config /tmp/kubeadm-config.yaml --skip-phases=addon/coredns,upload-config 2>&1 | head -100",
       "  echo '✓ kubeadm init completed successfully'",
       "  echo 'Verifying patches were applied to manifests...'",
       "  if grep -q 'initialDelaySeconds: 120' /etc/kubernetes/manifests/etcd.yaml && grep -q 'initialDelaySeconds: 120' /etc/kubernetes/manifests/kube-apiserver.yaml; then",
