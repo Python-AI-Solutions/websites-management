@@ -43,6 +43,13 @@ terraform {
 }
 
 # ============================================================================
+# AWS PROVIDER: Root module provider configuration
+# ============================================================================
+provider "aws" {
+  region = var.aws_region
+}
+
+# ============================================================================
 # HEALTH CHECK: Determine if FRP emergency access is needed
 # ============================================================================
 # Requirement: "checks for debian host configuration… if it fails

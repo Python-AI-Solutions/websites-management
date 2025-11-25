@@ -24,20 +24,6 @@ controlPlaneEndpoint: ${var.control_plane_endpoint}
 networking:
   podSubnet: ${var.pod_cidr}
   serviceSubnet: ${var.service_cidr}
-apiServer:
-  extraArgs:
-    audit-log-path: /var/log/kubernetes/audit.log
-    audit-policy-file: /etc/kubernetes/audit-policy.yaml
-    audit-log-maxage: "30"
-  encryptionConfig:
-  - resources:
-    - secrets
-    providers:
-    - aescbc:
-        keys:
-        - name: key1
-          secret: $(openssl rand -base64 32)
-    - identity: {}
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
@@ -45,6 +31,14 @@ nodeRegistration:
   kubeletExtraArgs:
     max-pods: "250"
 KUBEADMCONFIG
+
+  # API server extraArgs for encryption and audit (applied post-init)
+  apiserver_extra_args = <<-APISERVER_ARGS
+    - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml
+    - --audit-log-path=/var/log/kubernetes/audit.log
+    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+    - --audit-log-maxage=30
+APISERVER_ARGS
 
   # SSH connection settings
   # Use SSH agent instead of reading key files directly (works with passphrase-protected keys)
@@ -313,7 +307,6 @@ resource "null_resource" "wireguard_setup" {
       "PrivateKey = ${var.debian_wireguard_private_key}",
       "Address = 10.99.0.2/24",
       "ListenPort = 51820",
-      "",
       "[Peer]",
       "# WireGuard Server (AWS Bastion)",
       "PublicKey = ${var.wireguard_server_public_key}",
@@ -619,12 +612,12 @@ resource "null_resource" "k8s_init" {
       "      limits:",
       "        memory: '2Gi'",
       "    livenessProbe:",
-      "      initialDelaySeconds: 120",
+      "      initialDelaySeconds: 30",
       "      failureThreshold: 10",
       "      periodSeconds: 10",
       "      timeoutSeconds: 15",
       "    startupProbe:",
-      "      initialDelaySeconds: 120",
+      "      initialDelaySeconds: 30",
       "      failureThreshold: 18",
       "      periodSeconds: 10",
       "      timeoutSeconds: 15",
@@ -640,23 +633,15 @@ resource "null_resource" "k8s_init" {
       "      limits:",
       "        memory: '2Gi'",
       "    livenessProbe:",
-      "      initialDelaySeconds: 120",
+      "      initialDelaySeconds: 30",
       "      failureThreshold: 10",
       "      periodSeconds: 10",
       "      timeoutSeconds: 15",
       "    startupProbe:",
-      "      initialDelaySeconds: 120",
+      "      initialDelaySeconds: 30",
       "      failureThreshold: 18",
       "      periodSeconds: 10",
       "      timeoutSeconds: 15",
-      "    command:",
-      "      - kube-apiserver",
-      "      - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml",
-      "      - --audit-policy-file=/etc/kubernetes/audit-policy.yaml",
-      "      - --audit-log-path=/var/log/kubernetes/audit.log",
-      "      - --audit-log-maxage=7",
-      "      - --audit-log-maxbackup=10",
-      "      - --audit-log-maxsize=100",
       "    volumeMounts:",
       "    - name: encryption-config",
       "      mountPath: /etc/kubernetes/encryption-config.yaml",
@@ -713,19 +698,9 @@ resource "null_resource" "k8s_init" {
       "      timeoutSeconds: 15",
       "EOF",
       "  echo '✓ Patches prepared in /etc/kubernetes/patches'",
-      "  echo 'Running kubeadm init using phases to apply patches...'",
-      "  sudo kubeadm init phase preflight --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase certs all --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase kubeconfig all --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase kubelet-start --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase control-plane all --patches $PATCH_DIR",
-      "  sudo kubeadm init phase etcd local --patches $PATCH_DIR",
-      "  sudo kubeadm init phase upload-config all --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase upload-certs --upload-certs --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase mark-control-plane --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase bootstrap-token --config /tmp/kubeadm-config.yaml",
-      "  sudo kubeadm init phase kubelet-finalize all --config /tmp/kubeadm-config.yaml",
-      "  echo '✓ kubeadm init phases completed successfully'",
+      "  echo 'Running kubeadm init with clean configuration (patches applied post-init)...'",
+      "  sudo kubeadm init --config /tmp/kubeadm-config.yaml --skip-phases=addon/coredns 2>&1 | head -100",
+      "  echo '✓ kubeadm init completed successfully'",
       "  echo 'Verifying patches were applied to manifests...'",
       "  if grep -q 'initialDelaySeconds: 120' /etc/kubernetes/manifests/etcd.yaml && grep -q 'initialDelaySeconds: 120' /etc/kubernetes/manifests/kube-apiserver.yaml; then",
       "    echo '✅ Patches successfully applied! Probe delays set to 120s, failureThreshold: 10'",
@@ -763,6 +738,29 @@ resource "null_resource" "k8s_init" {
       "  if [ $API_READY -eq 0 ]; then",
       "    echo '⚠ API server did not become ready within 120s'",
       "  fi",
+      "  echo ''",
+      "  echo 'Adding encryption and audit config to API server...'",
+      "  MANIFEST=/etc/kubernetes/manifests/kube-apiserver.yaml",
+      "  if [ -f \"$$MANIFEST\" ]; then",
+      "    # Create backup",
+      "    sudo cp \"$$MANIFEST\" \"$${MANIFEST}.pre-encryption\"",
+      "    # Update manifest with encryption and audit args",
+      "    sudo sed -i '/- kube-apiserver/a\\    - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml\\n    - --audit-log-path=/var/log/kubernetes/audit.log\\n    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml\\n    - --audit-log-maxage=30' \"$$MANIFEST\"",
+      "    echo '✓ Encryption and audit flags added to API server manifest'",
+      "  fi",
+      "  echo 'Restarting kubelet to apply new manifest...'",
+      "  sudo systemctl restart kubelet",
+      "  sleep 10",
+      "  echo 'Waiting for updated API server (max 60s)...'",
+      "  API_READY_UPDATED=0",
+      "  for i in $(seq 1 60); do",
+      "    if sudo env KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes >/dev/null 2>&1; then",
+      "      echo \"✓ Updated API server is ready after $i seconds\"",
+      "      API_READY_UPDATED=1",
+      "      break",
+      "    fi",
+      "    sleep 1",
+      "  done",
       "  echo '✓ Cluster initialization complete'",
       "  mkdir -p $HOME/.kube",
       "  sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config",
