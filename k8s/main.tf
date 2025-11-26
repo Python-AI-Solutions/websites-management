@@ -216,6 +216,8 @@ module "kubernetes_cluster" {
   source   = "./kubernetes"
 
   # Get Debian details from debian module (for SSH access)
+  # PRIMARY: WireGuard VPN (10.99.0.2 via bastion 10.99.0.1)
+  # FALLBACK: FRP emergency tunnel if WireGuard unavailable
   host         = var.debian_host_ip
   host_port    = 22
   ssh_user     = var.debian_ssh_user

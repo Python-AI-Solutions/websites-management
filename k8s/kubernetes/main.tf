@@ -369,43 +369,23 @@ resource "null_resource" "firewall_setup" {
     inline = concat(
       [
         "set -euxo pipefail",
-        "# Flush existing rules (careful!)",
         "sudo iptables -F INPUT || true",
         "sudo iptables -F FORWARD || true",
-        "",
-        "# Default policies",
         "sudo iptables -P INPUT DROP",
         "sudo iptables -P FORWARD ACCEPT",
         "sudo iptables -P OUTPUT ACCEPT",
-        "",
-        "# Allow loopback",
         "sudo iptables -A INPUT -i lo -j ACCEPT",
-        "",
-        "# Allow established connections",
         "sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
-        "",
-        "# Allow ICMP (ping)",
-        "sudo iptables -A INPUT -p icmp -j ACCEPT",
-        "",
-        "# Allow configured ports - with special handling for SSH"
+        "sudo iptables -A INPUT -p icmp -j ACCEPT"
       ],
       [for port in var.debian_allowed_ports :
         "sudo iptables -A INPUT -s 10.99.0.0/24 -p ${port.protocol} --dport ${port.port} -m comment --comment '${port.comment} (WireGuard only)' -j ACCEPT"
       ],
       [
-        "",
-        "# Allow Kubernetes NodePort range (30000-32767) from WireGuard network only",
         "sudo iptables -A INPUT -s 10.99.0.0/24 -p tcp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services (WireGuard only)' -j ACCEPT",
         "sudo iptables -A INPUT -s 10.99.0.0/24 -p udp --dport 30000:32767 -m comment --comment 'Kubernetes NodePort services (WireGuard only)' -j ACCEPT",
-        ""
-      ],
-      [
-        "",
-        "# Save rules",
         "sudo sh -c 'iptables-save > /etc/iptables/rules.v4'",
-        "sudo systemctl enable netfilter-persistent",
-        "",
-        "echo 'Firewall rules configured and saved'"
+        "sudo systemctl enable netfilter-persistent"
       ]
     )
   }
