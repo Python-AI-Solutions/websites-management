@@ -19,13 +19,37 @@ variable "jump_host_instance_type" {
 variable "jump_host_key_name" {
   description = "SSH key pair that must stay attached to the instance."
   type        = string
-  default     = "pas_jump_proxy"
+  default     = "jump_proxy"
 }
 
 variable "jump_host_admin_user" {
   description = "SSH username with sudo access on the jump host."
   type        = string
   default     = "admin"
+}
+
+variable "jump_host_admin_authorized_key" {
+  description = "Public key to authorize for the admin user via cloud-init/user_data."
+  type        = string
+  sensitive   = true
+}
+
+variable "jump_host_jump_user" {
+  description = "Non-privileged jump user account that should always exist on the bastion."
+  type        = string
+  default     = "newuser"
+}
+
+variable "jump_host_jump_user_public_key" {
+  description = "SSH public key authorized for the jump user (e.g., contents of ~/.ssh/jumpproxy.pub)."
+  type        = string
+  sensitive   = true
+}
+
+variable "jump_host_bootstrap_ssh_cidrs" {
+  description = "Temporary CIDRs allowed to reach SSH during bootstrap (removed automatically after WireGuard is configured)."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
 
 variable "jump_host_subnet_id" {
@@ -61,13 +85,31 @@ variable "jump_host_security_group_description" {
 variable "jump_host_ssh_cidrs" {
   description = "CIDR blocks allowed to access SSH on the jump host."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default = ["10.99.0.0/24"]
 }
 
 variable "jump_host_port_7005_cidrs" {
   description = "CIDR blocks allowed to access TCP port 7005 on the jump host."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default = [
+    "109.76.78.109/32",
+    "223.190.84.183/32"
+  ]
+}
+
+variable "jump_host_port_7006_cidrs" {
+  description = "CIDR blocks allowed to access TCP port 7006 on the jump host (FRP SSH tunnel)."
+  type        = list(string)
+  default = [
+    "109.76.78.109/32",
+    "223.190.84.183/32"
+  ]
+}
+
+variable "enable_frp_access" {
+  description = "Set to true to expose FRP control/tunnel ports (7005/7006)."
+  type        = bool
+  default     = false
 }
 
 variable "jump_host_security_group_tags" {
@@ -120,6 +162,23 @@ variable "jump_host_eip_tags" {
   }
 }
 
+variable "bastion_eip_allocation_id" {
+  description = "Allocation ID of the bastion EIP managed by the eips module."
+  type        = string
+}
+
+variable "bastion_public_ip" {
+  description = "Public IP address of the bastion (output from the persistent EIP module)."
+  type        = string
+}
+
+variable "bastion_wireguard_private_key" {
+  description = "Private key that should be installed on the bastion WireGuard interface (keeps VPN identity stable)."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "wireguard_address" {
   description = "WireGuard interface address (with CIDR) assigned to the jump host."
   type        = string
@@ -142,4 +201,23 @@ variable "wireguard_peers" {
     endpoint             = optional(string)
   }))
   default = []
+}
+
+variable "jump_host_root_volume_type" {
+  description = "EBS volume type for jump host root volume (gp2, gp3, io1, io2, st1, sc1)"
+  type        = string
+  default     = "gp3"
+}
+
+variable "frp_token" {
+  description = "FRP authentication token (must match on server and client)"
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-production"
+}
+
+variable "frp_ssh_proxy_port" {
+  description = "FRP remote port exposed on the bastion to reach Debian SSH (default 7006)"
+  type        = number
+  default     = 7006
 }

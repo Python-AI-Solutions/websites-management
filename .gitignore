@@ -22,8 +22,6 @@ kubeconfig
 k8s/kubeconfig
 k8s/tmp-*
 k8s/join-command.txt
-k8s.tfvars
-aws.tfvars
 
 # Remote state setup (bootstrap)
 k8s/remote-state-setup/terraform.tfstate

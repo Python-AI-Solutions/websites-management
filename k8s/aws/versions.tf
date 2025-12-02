@@ -11,9 +11,4 @@ terraform {
       version = "~> 3.4"
     }
   }
-
-  backend "gcs" {
-    bucket = "k8s-tfstate-midyear-pattern-470017-b8"
-    prefix = "aws-infra/terraform.tfstate"
-  }
 }

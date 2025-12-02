@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Helper script to extract SSH config and generate k8s.tfvars
+# Helper script to extract SSH config and generate terraform.tfvars
 # Usage: ./ssh-config-helper.sh <ssh-host-alias>
 # Example: ./ssh-config-helper.sh k8s-host
 
@@ -12,7 +12,7 @@ if [ $# -ne 1 ]; then
 fi
 
 SSH_ALIAS="$1"
-OUTPUT_FILE="k8s.tfvars"
+OUTPUT_FILE="terraform.tfvars"
 
 # Function to extract SSH config value
 get_ssh_config() {
@@ -91,7 +91,7 @@ if [ -n "$BASTION_HOST" ] && [ -z "$BASTION_PORT" ]; then
     BASTION_PORT=22
 fi
 
-# Generate k8s.tfvars
+# Generate terraform.tfvars
 cat > "$OUTPUT_FILE" << EOF
 # Generated from SSH config alias: $SSH_ALIAS
 # Generated at: $(date)
@@ -145,4 +145,4 @@ EOF
 echo "✅ Created $OUTPUT_FILE from SSH config alias: $SSH_ALIAS"
 echo ""
 echo "Review and edit $OUTPUT_FILE, then run:"
-echo "  tofu apply -var-file=$OUTPUT_FILE"
+echo "  tofu apply"
