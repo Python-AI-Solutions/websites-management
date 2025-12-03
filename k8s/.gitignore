@@ -1,0 +1,54 @@
+# Terraform state and configuration
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+.tofu/
+.tofu-cache/
+
+# Sensitive configuration - MUST NOT COMMIT
+terraform.tfvars
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Kubernetes generated configs
+tmp-*.yaml
+kubeconfig
+*.kubeconfig
+join-command.txt
+
+# Kubernetes secret files
+k8s/secrets/
+secrets.yaml
+
+# GCP/AWS credentials
+*-gcs-admin-*.json
+*-cluster-admin-*.json
+credentials.json
+service-account-key.json
+
+# WireGuard keys and configs
+*.conf
+*-wireguard-keys.md
+wireguard-peers.json
+
+# Generated files
+*.swp
+*.swo
+*~
+.DS_Store
+.vscode/
+.idea/
+
+# Local development
+.env
+.env.local
+*.local
+
+# State backups
+errored.tfstate
+*.backup

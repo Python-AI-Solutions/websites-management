@@ -1,71 +1,122 @@
 # Documentation Index
 
-## Migration Documents
+Complete navigation for all project documentation.
 
-### [Migration Guide](migration-guide.md) - **START HERE**
-Comprehensive step-by-step guide for migrating from Register365 to Cloudflare.
-- Phase 1: Set up Cloudflare (zero downtime)
-- Phase 2: DNS migration (brief downtime)
-- Phase 3: Re-enable GitHub Pages
-- Phase 4: Enable Google Workspace DNS (optional)
+## Quick Navigation
 
-**Use this for:** First-time migration planning and execution.
+### 🏗️ Infrastructure & Kubernetes
 
-### [Migration Checklist](migration-checklist.md)
-Quick reference checklist for the migration process. Print this or keep it open during migration.
+**New to this project?** Start here:
 
-**Use this for:** Day-of migration task tracking.
+1. [infrastructure/README.md](infrastructure/README.md) - Infrastructure overview
+2. [infrastructure/setup.md](infrastructure/setup.md) - How to deploy (15-20 minutes)
+3. [infrastructure/architecture.md](infrastructure/architecture.md) - How it all works
+4. [infrastructure/security.md](infrastructure/security.md) - Security practices
+5. [infrastructure/config.md](infrastructure/config.md) - Configuration guide
 
-## Reference Documents
+### 🌐 Websites
 
-### [DNS Records Review](dns-records-review.md)
-Analysis of current DNS records with recommendations on what to keep, update, or remove.
+See [websites/README.md](websites/README.md) for website deployment documentation.
 
-**Use this for:** Understanding your current DNS configuration.
+### 📚 General
 
-### [Removed DNS Records](removed-dns-records.md)
-Archive of DNS records that were removed during cleanup (mostly obsolete Register365 email infrastructure).
+- [../README.md](../README.md) - Project overview
+- [../CONTRIBUTING.md](../CONTRIBUTING.md) - How to contribute
 
-**Use this for:** Historical reference if you need to verify what was removed.
+---
 
-### [Google Workspace Setup](google-workspace-setup.md)
-Detailed guide for enabling Google Workspace email management via the IaC module (Phase 4).
+## By Task
 
-**Use this for:** When you're ready to manage Gmail DNS records via OpenTofu.
+### I want to deploy the infrastructure
+→ [infrastructure/setup.md](infrastructure/setup.md)
 
-### [DNS Records Reference](dns-records-reference.md)
-Technical reference for the DNS record structure and formats used in `prod.tfvars`.
+### I want to understand the design
+→ [infrastructure/architecture.md](infrastructure/architecture.md)
 
-**Use this for:** Understanding how to add/modify DNS records in the tfvars files.
+### I have security questions
+→ [infrastructure/security.md](infrastructure/security.md)
 
-## Quick Links
+### I need to configure Terraform
+→ [infrastructure/config.md](infrastructure/config.md)
 
-### Before Migration
-1. Read [Migration Guide](migration-guide.md)
-2. Review [DNS Records Review](dns-records-review.md)
-3. Update placeholders in `envs/prod.tfvars`
-4. Run through [Migration Checklist](migration-checklist.md)
+### I want to deploy a website
+→ [websites/README.md](websites/README.md)
 
-### During Migration
-- Follow [Migration Guide](migration-guide.md) Phase 1-3
-- Use `pixi run verify-dns` to check DNS propagation
-- Check off items in [Migration Checklist](migration-checklist.md)
+### I want to contribute
+→ [../CONTRIBUTING.md](../CONTRIBUTING.md)
 
-### After Migration
-- Complete [Migration Checklist](migration-checklist.md) post-migration items
-- (Optional) Set up [Google Workspace DNS](google-workspace-setup.md)
+---
 
-## Scripts
+## Documentation Structure
 
-Located in `../scripts/`:
-- `verify-dns.sh` - Check DNS records and website accessibility (run via `pixi run verify-dns`)
-- `get-account-id.sh` - Retrieve Cloudflare account ID from API
-- `load-env.sh` - Load environment variables from `.env` file
+```
+docs/
+├── README.md                 ← This file (navigation)
+├── infrastructure/           ← Kubernetes & infrastructure
+│   ├── README.md             ← Infrastructure overview
+│   ├── setup.md              ← Deployment guide (START HERE)
+│   ├── architecture.md       ← System design
+│   ├── security.md           ← Security practices
+│   └── config.md             ← Configuration reference
+└── websites/                 ← Website deployment
+    └── README.md             ← Website docs
+```
 
-## Support
+---
 
-If you encounter issues during migration:
-1. Check the Troubleshooting section in [Migration Guide](migration-guide.md)
-2. Review Cloudflare DNS dashboard for record status
-3. Use `pixi run verify-dns` to diagnose DNS issues
-4. Check [Removed DNS Records](removed-dns-records.md) if something is missing
+## Full Documentation Map
+
+### Infrastructure Documentation
+
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| **[infrastructure/setup.md](infrastructure/setup.md)** | Step-by-step deployment guide | 15 min |
+| **[infrastructure/architecture.md](infrastructure/architecture.md)** | System design and topology | 10 min |
+| **[infrastructure/security.md](infrastructure/security.md)** | Security practices and hardening | 10 min |
+| **[infrastructure/config.md](infrastructure/config.md)** | Terraform configuration reference | 15 min |
+
+### Website Documentation
+
+| Document | Purpose |
+|----------|---------|
+| **[websites/README.md](websites/README.md)** | Website deployment guide |
+
+### Project Documentation
+
+| Document | Purpose |
+|----------|---------|
+| **[../README.md](../README.md)** | Project overview |
+| **[../CONTRIBUTING.md](../CONTRIBUTING.md)** | Contribution guidelines |
+| **[../LICENSE](../LICENSE)** | MIT License |
+
+---
+
+## Before You Start
+
+✅ **Prerequisites:**
+- Terraform >= 1.5 (or OpenTofu)
+- kubectl >= 1.27
+- AWS account configured
+- SSH keys in agent
+
+✅ **Recommended Reading:**
+1. Project [README.md](../README.md)
+2. Infrastructure [README.md](infrastructure/README.md)
+3. Deployment [setup.md](infrastructure/setup.md)
+
+---
+
+## Troubleshooting
+
+**Can't find what you need?**
+
+1. Use Ctrl+F to search this page
+2. Check the relevant documentation file
+3. Review [../README.md](../README.md) for overview
+4. See [../CONTRIBUTING.md](../CONTRIBUTING.md) for support
+
+---
+
+**Ready to deploy?** → [infrastructure/setup.md](infrastructure/setup.md)
+
+**Ready to contribute?** → [../CONTRIBUTING.md](../CONTRIBUTING.md)

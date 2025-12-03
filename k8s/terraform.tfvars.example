@@ -1,0 +1,58 @@
+# Terraform Configuration Example
+# Copy this file to terraform.tfvars and fill in your own values
+# DO NOT COMMIT terraform.tfvars to version control
+
+# WireGuard private keys (base64 encoded, 32 bytes)
+# Generate with: wg genkey | wg pubkey
+debian_wireguard_private_key  = "YOUR_DEBIAN_WIREGUARD_PRIVATE_KEY_HERE"
+bastion_wireguard_private_key = "YOUR_BASTION_WIREGUARD_PRIVATE_KEY_HERE"
+bastion_wireguard_public_key  = "YOUR_BASTION_WIREGUARD_PUBLIC_KEY_HERE"
+
+# FRP (Fast Reverse Proxy) authentication token
+# Used for emergency access tunnel
+frp_token = "YOUR_FRP_AUTH_TOKEN_HERE"
+
+# Jump host (bastion) configuration
+jump_host_jump_user             = "YOUR_JUMP_USER_NAME"
+jump_host_jump_user_public_key  = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxxxxxxxxxxxxx user@host"
+jump_host_admin_authorized_key  = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIyyyyyyyyyyyyyyyy user@host"
+jump_host_key_name              = "YOUR_AWS_KEY_PAIR_NAME"
+
+# CIDR blocks allowed to bootstrap/deploy infrastructure
+# These are source IPs for Terraform deployment
+jump_host_bootstrap_ssh_cidrs   = ["YOUR_IP_ADDRESS/32", "ANOTHER_IP/32"]
+
+# WireGuard peer configuration
+# Public keys for all clients that should access the cluster
+wireguard_peers = [
+  {
+    name                 = "debian-host"
+    public_key           = "DEBIAN_WIREGUARD_PUBLIC_KEY"
+    allowed_ips          = ["10.99.0.2/32"]
+    persistent_keepalive = 25
+  },
+  {
+    name                 = "your-laptop"
+    public_key           = "YOUR_LAPTOP_WIREGUARD_PUBLIC_KEY"
+    allowed_ips          = ["10.99.0.15/32"]
+    persistent_keepalive = 25
+  },
+  {
+    name                 = "colleague-laptop"
+    public_key           = "COLLEAGUE_WIREGUARD_PUBLIC_KEY"
+    allowed_ips          = ["10.99.0.10/32"]
+    persistent_keepalive = 25
+  }
+]
+
+# Kubernetes control plane endpoint
+# Format: INTERNAL_IP:6443
+control_plane_endpoint = "192.168.1.123:6443"
+
+# Bastion SSH user
+bastion_ssh_user = "YOUR_JUMP_USER_NAME"
+
+# Feature flags
+enable_frp_emergency      = true
+deploy_debian_host        = true
+deploy_kubernetes_cluster = true
