@@ -1,0 +1,29 @@
+{
+  "wireguard_peers": [
+    {
+      "name": "debian-host",
+      "public_key": "YOUR_DEBIAN_WIREGUARD_PUBLIC_KEY_HERE",
+      "allowed_ips": [
+        "10.99.0.2/32"
+      ],
+      "persistent_keepalive": 25
+    },
+    {
+      "name": "your-laptop",
+      "public_key": "YOUR_LAPTOP_WIREGUARD_PUBLIC_KEY_HERE",
+      "allowed_ips": [
+        "10.99.0.15/32"
+      ],
+      "persistent_keepalive": 25
+    },
+    {
+      "name": "colleague-laptop",
+      "public_key": "COLLEAGUE_WIREGUARD_PUBLIC_KEY_HERE",
+      "allowed_ips": [
+        "10.99.0.10/32"
+      ],
+      "persistent_keepalive": 25
+    }
+  ]
+}
+
