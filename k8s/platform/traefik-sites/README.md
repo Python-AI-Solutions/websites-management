@@ -37,9 +37,11 @@ tofu apply
 
 The provided configuration creates routes for:
 
-* `cervical-screening.pythonaisolutions.com` (production app, hits the upstream service directly)
-* `staging.cervical-screening.pythonaisolutions.com`
-* `mlflow.cervical-screening.pythonaisolutions.com` (terminates at oauth2-proxy)
+* `cervical-screening.example.com` (production app, hits the upstream service directly)
+* `staging.cervical-screening.example.com`
+* `mlflow.cervical-screening.example.com` (terminates at oauth2-proxy)
+
+Replace `example.com` with your actual domain name.
 
 ---
 

@@ -1,6 +1,6 @@
 # Google Workspace DNS Checklist
 
-The `modules/google-workspace-email` module provisions everything Gmail needs to accept and deliver mail for `pythonaisolutions.com`. Work through the steps below when migrating the zone into Cloudflare.
+The `modules/google-workspace-email` module provisions everything Gmail needs to accept and deliver mail for `example-organization.com`. Work through the steps below when migrating the zone into Cloudflare.
 
 ## 1. Gather workspace values
 1. Sign in to the [Google Admin console](https://admin.google.com/) with a super-admin account.
@@ -31,8 +31,8 @@ The default SPF string (`v=spf1 include:_spf.google.com ~all`) matches Google’
 Update the DMARC reporting addresses before applying:
 
 ```hcl
-dmarc_rua = "mailto:dmarc@pythonaisolutions.com"
-dmarc_ruf = "mailto:dmarc-forensic@pythonaisolutions.com" # optional
+dmarc_rua = "mailto:dmarc@example.com"  # Replace with your domain
+dmarc_ruf = "mailto:dmarc-forensic@example.com" # optional - Replace with your domain
 dmarc_policy = "quarantine" # or none/reject
 dmarc_pct = 100
 ```

@@ -107,7 +107,7 @@ PersistentKeepalive = 25
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Refresh local WireGuard config from Terraform.")
-    parser.add_argument("--peer", required=True, help="Name of the peer entry in wireguard_peers (e.g., john-laptop).")
+    parser.add_argument("--peer", required=True, help="Name of the peer entry in wireguard_peers (e.g., team-member-1).")
     parser.add_argument("--config-name", help="Override the local config filename stem (defaults to the peer name).")
     parser.add_argument("--key-file", help="Explicit path to the local WireGuard private key.")
     parser.add_argument("--apply", action="store_true", help="Run `wg-quick down/up` after rewriting the config.")

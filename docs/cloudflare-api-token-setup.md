@@ -17,7 +17,7 @@ Account Resources:
 
 Zone Resources:
   Include | All zones from account
-  (or specific zone: pythonaisolutions.com)
+  (or specific zone: example-organization.com)
 ```
 
 ## Creating a New API Token
@@ -42,7 +42,7 @@ Zone Resources:
 5. **Set Zone Resources**
    - Under "Zone Resources":
      - Option A (Recommended): **Include** → **All zones from account**
-     - Option B: **Include** → **Specific zone** → `pythonaisolutions.com`
+     - Option B: **Include** → **Specific zone** → `example-organization.com`
 
 6. **Optional: Set IP/TTL Restrictions**
    - **Client IP Address Filtering**: Leave blank (or add your IPs for extra security)

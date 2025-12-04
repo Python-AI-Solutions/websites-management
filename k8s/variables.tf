@@ -18,9 +18,8 @@ variable "aws_region" {
 }
 
 variable "jump_host_ami" {
-  description = "AMI ID for jump host (bastion)"
+  description = "AMI ID for jump host (e.g., ami-0c55b159cbfafe1f0 for Debian). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "ami-064519b8c76274859"
 }
 
 variable "jump_host_instance_type" {
@@ -30,15 +29,13 @@ variable "jump_host_instance_type" {
 }
 
 variable "jump_host_subnet_id" {
-  description = "Subnet ID for jump host"
+  description = "Subnet ID for jump host (format: subnet-xxxxxxxxx). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "subnet-0bb0d24c4d5f3630f"
 }
 
 variable "jump_host_private_ip" {
-  description = "Private IP for jump host (optional)"
+  description = "Private IP for jump host (must be in subnet CIDR). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "172.31.82.16"
 }
 
 variable "jump_host_key_name" {
@@ -48,9 +45,8 @@ variable "jump_host_key_name" {
 }
 
 variable "jump_host_vpc_id" {
-  description = "VPC ID for security groups"
+  description = "VPC ID for security groups (format: vpc-xxxxxxxxx). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "vpc-0ac536a2ad40f6d6d"
 }
 
 variable "jump_host_admin_user" {

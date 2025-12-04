@@ -12,8 +12,8 @@ variable "cloudflare_account_id" {
 
 variable "zone_name" {
   type        = string
-  description = "Primary DNS zone to manage."
-  default     = "pythonaisolutions.com"
+  description = "Primary DNS zone to manage. Replace example.com with your domain."
+  default     = "example.com"
 }
 
 variable "gmail_enabled" {
@@ -36,8 +36,8 @@ variable "dmarc_policy" {
 
 variable "dmarc_rua" {
   type        = string
-  description = "DMARC aggregate report mailbox."
-  default     = "mailto:dmarc@pythonaisolutions.com"
+  description = "DMARC aggregate report mailbox. Replace example.com with your domain."
+  default     = "mailto:dmarc@example.com"
 }
 
 variable "dmarc_ruf" {

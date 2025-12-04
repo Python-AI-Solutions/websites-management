@@ -80,7 +80,7 @@ pages_projects = {
     production_branch = "main"
     build_command     = "npm run build"  # or "pixi run build"
     destination_dir   = "out"            # or "_site", "dist", etc.
-    custom_domain     = "subdomain.pythonaisolutions.com"
+    custom_domain     = "subdomain.example.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
@@ -182,7 +182,7 @@ Every workflow needs:
 
 The Terraform module automatically:
 
-1. **Creates CNAME record**: `subdomain.pythonaisolutions.com` → `project-name.pages.dev`
+1. **Creates CNAME record**: `subdomain.example.com` → `project-name.pages.dev`
 2. **Configures custom domain** in Pages project
 3. **Provisions HTTPS certificate** (automatic via Cloudflare)
 
@@ -241,10 +241,10 @@ Current sites (as of setup):
 
 | Project | Custom Domain | Framework | Status |
 |---------|---------------|-----------|--------|
-| hih-presentation | presentations.pythonaisolutions.com | Quarto | ✅ Configured |
-| pythonaisolutions-website | www.pythonaisolutions.com | Next.js | ✅ Configured |
-| company-handbook | handbook.pythonaisolutions.com | Quarto | ✅ Configured |
-| no-strings-resume | resume.pythonaisolutions.com | Vite/React | ✅ Configured |
+| hih-presentation | presentations.example.com | Quarto | ✅ Configured |
+| pythonaisolutions-website | www.example.com | Next.js | ✅ Configured |
+| company-handbook | handbook.example.com | Quarto | ✅ Configured |
+| no-strings-resume | resume.example.com | Vite/React | ✅ Configured |
 
 To add more:
 1. Add to `pages_projects` in `envs/prod.tfvars`
@@ -354,7 +354,7 @@ pixi run plan-prod  # Should show no changes if applied
 Check DNS propagation:
 
 ```bash
-dig subdomain.pythonaisolutions.com CNAME +short
+dig subdomain.example.com CNAME +short
 # Should show: project-name.pages.dev
 ```
 
@@ -474,7 +474,7 @@ To add multiple domains for one project:
 # In Terraform, configure primary domain
 pages_projects = {
   "my-app" = {
-    custom_domain = "app.pythonaisolutions.com"
+    custom_domain = "app.example.com"
     # ...
   }
 }

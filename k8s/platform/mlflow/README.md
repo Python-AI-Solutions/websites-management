@@ -20,9 +20,9 @@ By keeping the configuration here, the platform repo can recreate the environmen
 | `mlflow` Deployment + PVC (`mlflow-data`) | MLflow tracking server (logs + artifact cache) | Terraform (`main.tf`) |
 | `oauth2_proxy` module | oauth2-proxy Deployment/Service/Secret | Terraform (reusing `oauth2/modules/oauth2_proxy`) |
 | `traefik_site` module | Traefik IngressRoute + TLS | Terraform (`platform/traefik-sites`) |
-| `gcs-credentials` secret | Grants MLflow access to `gs://pythonaisolutions-mlflow-artifacts/mlflow` | Manual `kubectl create secret …` (mounted by Terraform) |
+| `gcs-credentials` secret | Grants MLflow access to `gs://example-organization-mlflow-artifacts/mlflow` | Manual `kubectl create secret …` (mounted by Terraform) |
 
-The MLflow server is launched with `--serve-artifacts` and `--allowed-hosts mlflow.cervical-screening.pythonaisolutions.com`, so all HTTP access must arrive through oauth2-proxy / Traefik.
+The MLflow server is launched with `--serve-artifacts` and `--allowed-hosts mlflow.cervical-screening.example-organization.com`, so all HTTP access must arrive through oauth2-proxy / Traefik.
 
 ---
 
@@ -37,7 +37,7 @@ The MLflow server is launched with `--serve-artifacts` and `--allowed-hosts mlfl
 
 | Secret / Variable | Description | Source |
 |-------------------|-------------|--------|
-| `gcs-credentials` (K8s) | Service account JSON with Storage write access to `gs://pythonaisolutions-mlflow-artifacts/mlflow` | Create manually: `kubectl create secret generic gcs-credentials --namespace mlflow --from-file=key.json=/path/to/sa.json` |
+| `gcs-credentials` (K8s) | Service account JSON with Storage write access to `gs://example-organization-mlflow-artifacts/mlflow` | Create manually: `kubectl create secret generic gcs-credentials --namespace mlflow --from-file=key.json=/path/to/sa.json` |
 | `postgres_user`, `postgres_password`, `postgres_database` | Credentials for the metadata DB | Define in `terraform.tfvars` (Terraform will create/update the secret) |
 | `oauth2_client_id`, `oauth2_client_secret` | Google **Web** client used by oauth2-proxy | Google Cloud Console → OAuth 2.0 Web Client |
 | `oauth2_cookie_secret` | 32‑byte random string for oauth2-proxy cookies | Generate once (e.g. `python - <<'PY'` snippet) or reuse existing |
@@ -101,7 +101,7 @@ cd platform/mlflow
 tofu apply
 ```
 
-Terraform will recreate both PVCs, the database, and the MLflow server with the correct artefact location (`gs://pythonaisolutions-mlflow-artifacts/mlflow/<experiment_id>`).
+Terraform will recreate both PVCs, the database, and the MLflow server with the correct artefact location (`gs://example-organization-mlflow-artifacts/mlflow/<experiment_id>`).
 
 ### Run the Desktop OAuth Flow
 
@@ -126,13 +126,13 @@ flow = InstalledAppFlow.from_client_secrets_file(
 )
 creds = flow.run_local_server(port=0)
 
-os.environ["MLFLOW_TRACKING_URI"] = "https://mlflow.cervical-screening.pythonaisolutions.com"
+os.environ["MLFLOW_TRACKING_URI"] = "https://mlflow.cervical-screening.example-organization.com"
 os.environ["MLFLOW_TRACKING_TOKEN"] = creds.id_token
 
 # Always create/select an experiment with an explicit artefact location
 mlflow.set_experiment(
     experiment_name="ignite-notebook-demo",
-    artifact_location="gs://pythonaisolutions-mlflow-artifacts/mlflow/ignite-notebook-demo",
+    artifact_location="gs://example-organization-mlflow-artifacts/mlflow/ignite-notebook-demo",
 )
 
 with mlflow.start_run():
@@ -147,7 +147,7 @@ Setting the experiment ensures your runs do not fall back to `Default` (which wo
 
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
-| `Invalid Host header - possible DNS rebinding attack detected` | Requests aimed at the service ClusterIP without the public host header | Include `Host: mlflow.cervical-screening.pythonaisolutions.com` when accessing internally, or go through oauth2-proxy |
+| `Invalid Host header - possible DNS rebinding attack detected` | Requests aimed at the service ClusterIP without the public host header | Include `Host: mlflow.cervical-screening.example-organization.com` when accessing internally, or go through oauth2-proxy |
 | MLflow pods crash on startup with `password authentication failed` | `postgres-secret` contains stale credentials | Update `terraform.tfvars` with the intended values and rerun `tofu apply` (Terraform recreates the secret and restarts the deployment) |
 | Notebook artefacts land in `gs://YOUR_BUCKET/YOUR_PREFIX` | Default experiment created in an old environment | Create/select a new experiment with a real artefact location, or rebuild the stack so `Default` is recreated (delete PVCs + apply) |
 | oauth2-proxy login fails | Incorrect OAuth client values or cookie secret length | Verify the Web client ID/secret and ensure `oauth2_cookie_secret` is exactly 16/24/32 bytes (Base64‑encode before storing) |
@@ -168,5 +168,5 @@ Run `python platform/mlflow/tests/test_mlflow_internal.py` after any change; it 
 ## Notes for Future Contributors
 
 * `terraform.tfvars` is intentionally ignored—do not commit secrets. Mirror any structural changes into `terraform.tfvars.example`.
-* If you add new experiments or automation via Argo CD, ensure the artefact location is always rooted under `gs://pythonaisolutions-mlflow-artifacts/mlflow` so Terraform and runtime remain aligned.
+* If you add new experiments or automation via Argo CD, ensure the artefact location is always rooted under `gs://example-organization-mlflow-artifacts/mlflow` so Terraform and runtime remain aligned.
 * After structural changes, always run the smoke test and include command outputs in PR descriptions to signal that the environment still works.

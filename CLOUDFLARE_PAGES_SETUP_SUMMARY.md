@@ -90,7 +90,7 @@ A reusable module that creates:
 envs/prod.tfvars
 ├── pages_projects = {
 │   "hih-presentation" = {
-│       custom_domain = "presentations.pythonaisolutions.com"
+│       custom_domain = "presentations.example-organization.com"
 │       build_command = "pixi run build"
 │       destination_dir = "_site"
 │   }
@@ -100,7 +100,7 @@ envs/prod.tfvars
 
 Creates:
 ├── Cloudflare Pages project "hih-presentation"
-├── DNS: presentations.pythonaisolutions.com → hih-presentation.pages.dev
+├── DNS: presentations.example-organization.com → hih-presentation.pages.dev
 └── Custom domain configured + HTTPS cert
 ```
 
@@ -141,7 +141,7 @@ pages_projects = {
     production_branch = "main"
     build_command     = "pixi run build"
     destination_dir   = "_site"
-    custom_domain     = "presentations.pythonaisolutions.com"
+    custom_domain     = "presentations.example-organization.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
@@ -150,14 +150,14 @@ pages_projects = {
     production_branch = "main"
     build_command     = "pixi run build"
     destination_dir   = "_site"
-    custom_domain     = "handbook.pythonaisolutions.com"
+    custom_domain     = "handbook.example-organization.com"
   }
 
-  "pythonaisolutions-website" = {
+  "example-organization-website" = {
     production_branch = "main"
     build_command     = "npm run build"
     destination_dir   = "out"
-    custom_domain     = "www.pythonaisolutions.com"
+    custom_domain     = "www.example-organization.com"
   }
 }
 ```
@@ -212,7 +212,7 @@ The infrastructure is ready. To complete deployment:
 4. **Verify deployment**:
    - Check GitHub Actions run
    - Visit https://hih-presentation.pages.dev
-   - Visit https://presentations.pythonaisolutions.com
+   - Visit https://presentations.example-organization.com
 
 ## Adding More Sites
 

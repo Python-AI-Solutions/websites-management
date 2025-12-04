@@ -36,7 +36,7 @@ Argo CD is installed with ingress disabled—Traefik handles exposure. The chart
      platform = {
        description  = "Platform-managed workloads"
        source_repos = [
-         "https://github.com/pythonaisolutions/agentic-cervical-screener.git"
+         "https://github.com/example-organization/agentic-cervical-screener.git"
        ]
        destinations = [
          { namespace = "production" },
@@ -50,7 +50,7 @@ Argo CD is installed with ingress disabled—Traefik handles exposure. The chart
      cervical-viewer-prod = {
        project = "platform"
        source = {
-         repo_url = "https://github.com/pythonaisolutions/agentic-cervical-screener.git"
+         repo_url = "https://github.com/example-organization/agentic-cervical-screener.git"
          path     = "deploy/k8s/production"
        }
        destination = { namespace = "production" }
@@ -83,7 +83,7 @@ Argo CD is installed with ingress disabled—Traefik handles exposure. The chart
    ```bash
    kubectl create secret generic repo-agentic-cervical-screener \
      --namespace argocd \
-     --from-literal=url=https://github.com/pythonaisolutions/agentic-cervical-screener.git \
+     --from-literal=url=https://github.com/example-organization/agentic-cervical-screener.git \
      --from-literal=username=<github-username> \
      --from-literal=password=<github-token> \
      --dry-run=client -o yaml | kubectl apply -f -

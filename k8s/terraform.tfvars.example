@@ -22,6 +22,11 @@ jump_host_key_name              = "YOUR_AWS_KEY_PAIR_NAME"
 # These are source IPs for Terraform deployment
 jump_host_bootstrap_ssh_cidrs   = ["YOUR_IP_ADDRESS/32", "ANOTHER_IP/32"]
 
+# CIDR blocks allowed to access FRP ports (emergency access)
+# Leave empty if FRP is disabled
+jump_host_port_7005_cidrs       = ["YOUR_IP_ADDRESS/32"]
+jump_host_port_7006_cidrs       = ["YOUR_IP_ADDRESS/32"]
+
 # WireGuard peer configuration
 # Public keys for all clients that should access the cluster
 wireguard_peers = [

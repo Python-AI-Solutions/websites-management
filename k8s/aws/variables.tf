@@ -5,9 +5,8 @@ variable "aws_region" {
 }
 
 variable "jump_host_ami" {
-  description = "AMI currently used by the existing jump host instance."
+  description = "AMI ID for jump host (e.g., ami-0c55b159cbfafe1f0 for Debian). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "ami-064519b8c76274859"
 }
 
 variable "jump_host_instance_type" {
@@ -53,21 +52,18 @@ variable "jump_host_bootstrap_ssh_cidrs" {
 }
 
 variable "jump_host_subnet_id" {
-  description = "Subnet where the instance currently lives."
+  description = "Subnet ID where jump host instance lives (format: subnet-xxxxxxxxx). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "subnet-0bb0d24c4d5f3630f"
 }
 
 variable "jump_host_private_ip" {
-  description = "Static private IP already assigned to the instance."
+  description = "Static private IP for the instance (must be in subnet CIDR). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "172.31.82.16"
 }
 
 variable "jump_host_vpc_id" {
-  description = "VPC that contains the jump host networking resources."
+  description = "VPC ID for security groups (format: vpc-xxxxxxxxx). REQUIRED: provide in terraform.tfvars"
   type        = string
-  default     = "vpc-0ac536a2ad40f6d6d"
 }
 
 variable "jump_host_security_group_name" {
@@ -89,21 +85,15 @@ variable "jump_host_ssh_cidrs" {
 }
 
 variable "jump_host_port_7005_cidrs" {
-  description = "CIDR blocks allowed to access TCP port 7005 on the jump host."
+  description = "CIDR blocks allowed to access TCP port 7005 on the jump host (FRP control). Define in terraform.tfvars"
   type        = list(string)
-  default = [
-    "109.76.78.109/32",
-    "223.190.84.183/32"
-  ]
+  default     = []
 }
 
 variable "jump_host_port_7006_cidrs" {
-  description = "CIDR blocks allowed to access TCP port 7006 on the jump host (FRP SSH tunnel)."
+  description = "CIDR blocks allowed to access TCP port 7006 on the jump host (FRP SSH tunnel). Define in terraform.tfvars"
   type        = list(string)
-  default = [
-    "109.76.78.109/32",
-    "223.190.84.183/32"
-  ]
+  default     = []
 }
 
 variable "enable_frp_access" {
@@ -143,9 +133,9 @@ variable "jump_host_root_volume_encrypted" {
 }
 
 variable "jump_host_root_volume_kms_key_id" {
-  description = "KMS key that encrypts the root volume."
+  description = "KMS key ARN that encrypts the root volume (format: arn:aws:kms:REGION:ACCOUNT_ID:key/KEY_ID). Optional - provide in terraform.tfvars if needed"
   type        = string
-  default     = "arn:aws:kms:us-east-1:302263054204:key/f7a6c94d-a278-4cdb-9e95-e7211ac8d7ec"
+  default     = ""
 }
 
 variable "jump_host_tags" {

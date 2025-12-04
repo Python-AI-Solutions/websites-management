@@ -61,3 +61,7 @@ k8s/debian-wireguard-keys.md
 ~/.config/wireguard/            # User's WireGuard configs
 sumit.conf                      # User-specific WireGuard config files
 *-wireguard-keys.md             # Any WireGuard key files
+
+# Environment configurations - NEVER commit production secrets
+envs/*.tfvars
+!envs/*.tfvars.example

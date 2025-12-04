@@ -40,8 +40,8 @@ variable "dmarc_policy" {
 
 variable "dmarc_rua" {
   type        = string
-  description = "Aggregate report mailbox."
-  default     = "mailto:dmarc@pythonaisolutions.com"
+  description = "Aggregate report mailbox. Replace example.com with your domain."
+  default     = "mailto:dmarc@example.com"
 }
 
 variable "dmarc_ruf" {

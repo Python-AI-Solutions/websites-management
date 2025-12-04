@@ -1,4 +1,4 @@
-# DNS Records Review for pythonaisolutions.com
+# DNS Records Review for example-organization.com
 
 ## Likely Outdated Records (From Register365 Email Days)
 
