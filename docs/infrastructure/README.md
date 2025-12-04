@@ -10,6 +10,8 @@ Complete documentation for the Kubernetes infrastructure deployment.
 | **[architecture.md](./architecture.md)** | System design and components | 10 min |
 | **[security.md](./security.md)** | Security practices and hardening | 10 min |
 | **[config.md](./config.md)** | Terraform configuration reference | 15 min |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and solutions | 5 min |
+| **[RUNBOOKS.md](./RUNBOOKS.md)** | Operational procedures | 10 min |
 
 ## Overview
 
@@ -69,8 +71,11 @@ Follow [setup.md](./setup.md) to:
 ### I'm stuck on configuration
 → [config.md](./config.md)
 
-### I need to troubleshoot an issue
-→ See troubleshooting section in [setup.md](./setup.md)
+### Something is broken or not working
+→ [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
+### I need to run operational procedures
+→ [RUNBOOKS.md](./RUNBOOKS.md)
 
 ## Prerequisites
 

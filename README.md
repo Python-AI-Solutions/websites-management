@@ -53,6 +53,8 @@ Start here based on your needs:
 | **Understand the architecture** | [docs/infrastructure/architecture.md](docs/infrastructure/architecture.md) |
 | **Security questions** | [docs/infrastructure/security.md](docs/infrastructure/security.md) |
 | **Configure Terraform** | [docs/infrastructure/config.md](docs/infrastructure/config.md) |
+| **Troubleshoot issues** | [docs/infrastructure/TROUBLESHOOTING.md](docs/infrastructure/TROUBLESHOOTING.md) |
+| **Operational procedures** | [docs/infrastructure/RUNBOOKS.md](docs/infrastructure/RUNBOOKS.md) |
 | **Deploy websites** | [docs/websites/README.md](docs/websites/README.md) |
 | **How to contribute** | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | **Project overview** | [docs/README.md](docs/README.md) |
