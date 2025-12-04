@@ -47,7 +47,7 @@ wg genkey | wg pubkey
 
 # Add to wireguard_peers in terraform.tfvars
 wireguard_peers = [
-  { name = "your-laptop", public_key = "...", allowed_ips = ["10.99.0.X/32"] }
+  { name = "team-member", public_key = "...", allowed_ips = ["10.99.0.X/32"] }
 ]
 ```
 
@@ -103,7 +103,8 @@ Complete audit trail of all Kubernetes API operations:
 
 **Access audit logs:**
 ```bash
-ssh debian-host tail -f /var/log/kubernetes/audit.log
+# Connect via WireGuard first, then SSH to Debian host
+ssh sysadmin@10.99.0.2 tail -f /var/log/kubernetes/audit.log
 ```
 
 ### Network Policies
@@ -127,8 +128,9 @@ For breakglass scenarios (when normal access fails):
 
 **Usage:**
 ```bash
-# If normal WireGuard access fails
-ssh -p <frp-tunnel-port> debian-host
+# If normal WireGuard access fails, use FRP tunnel as fallback
+# Contact infrastructure admin for FRP port and token
+ssh -p <FRP_PORT> frp@<bastion-public-ip>
 ```
 
 **Security:**
@@ -168,7 +170,8 @@ ssh -p <frp-tunnel-port> debian-host
 
 2. **Monitor audit logs:**
    ```bash
-   ssh debian-host tail -100 /var/log/kubernetes/audit.log
+   # Connect via WireGuard first
+   ssh sysadmin@10.99.0.2 tail -100 /var/log/kubernetes/audit.log
    ```
 
 3. **Check certificate expiration:**
@@ -228,14 +231,15 @@ Set up monitoring for:
 
 ### Audit Log Access Fails
 ```bash
+# Connect via WireGuard first (10.99.0.2 is Debian host internal IP)
 # Check log file exists
-ssh debian-host ls -la /var/log/kubernetes/audit.log
+ssh sysadmin@10.99.0.2 ls -la /var/log/kubernetes/audit.log
 
 # Check permissions
-ssh debian-host stat /var/log/kubernetes/audit.log
+ssh sysadmin@10.99.0.2 stat /var/log/kubernetes/audit.log
 
 # Check disk space
-ssh debian-host df -h /var/log/
+ssh sysadmin@10.99.0.2 df -h /var/log/
 ```
 
 ### Etcd Encryption Issues
@@ -243,8 +247,8 @@ ssh debian-host df -h /var/log/
 # Verify encryption config
 kubectl get configmap -n kube-system | grep encryption
 
-# Check etcd status
-ssh debian-host sudo systemctl status kubelet
+# Check etcd status (via WireGuard SSH)
+ssh sysadmin@10.99.0.2 sudo systemctl status kubelet
 ```
 
 ### Certificate Expiration

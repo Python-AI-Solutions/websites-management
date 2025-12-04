@@ -78,7 +78,7 @@ cat ~/.ssh/id_ed25519.pub
 
 **Or generate new key:**
 ```bash
-ssh-keygen -t ed25519 -C "your-email@example.com" -f ~/.ssh/id_ed25519
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
 ```
 
@@ -103,7 +103,7 @@ chmod 600 ~/.ssh/my-key.pem
 ## Bootstrap Security
 
 ```hcl
-jump_host_bootstrap_ssh_cidrs = ["51.37.143.220/32", "223.190.80.154/32"]
+jump_host_bootstrap_ssh_cidrs = ["1.2.3.4/32"]
 ```
 
 **CIDRs allowed for initial SSH deployment**
@@ -129,15 +129,15 @@ jump_host_bootstrap_ssh_cidrs = [
 ```hcl
 wireguard_peers = [
   {
-    name                 = "debian-host"
-    public_key           = "WIREGUARD_PUBLIC_KEY"
+    name                 = "kubernetes-host"
+    public_key           = "KUBERNETES_HOST_PUBLIC_KEY"
     allowed_ips          = ["10.99.0.2/32"]
     persistent_keepalive = 25
   },
   {
-    name                 = "your-laptop"
-    public_key           = "YOUR_LAPTOP_WIREGUARD_PUBLIC_KEY"
-    allowed_ips          = ["10.99.0.15/32"]
+    name                 = "team-member"
+    public_key           = "TEAM_MEMBER_WIREGUARD_PUBLIC_KEY"
+    allowed_ips          = ["10.99.0.10/32"]
     persistent_keepalive = 25
   }
 ]
@@ -153,8 +153,8 @@ wireguard_peers = [
 2. **Add to wireguard_peers:**
    ```hcl
    {
-     name                 = "alice-laptop"
-     public_key           = "ALICE_PUBLIC_KEY_BASE64"
+     name                 = "team-member-laptop"
+     public_key           = "TEAM_MEMBER_PUBLIC_KEY_BASE64"
      allowed_ips          = ["10.99.0.10/32"]
      persistent_keepalive = 25
    }
@@ -186,14 +186,14 @@ wireguard_peers = [
 ## Kubernetes Control Plane
 
 ```hcl
-control_plane_endpoint = "192.168.1.123:6443"
+control_plane_endpoint = "10.99.0.2:6443"
 ```
 
 **Internal IP of Kubernetes API server**
 
 **Format:** `INTERNAL_IP:6443`
 
-Example: `10.99.0.2:6443` (Debian host internal IP)
+The Debian host runs on the WireGuard VPN IP `10.99.0.2/32`, making this the control plane endpoint.
 
 ## Bastion SSH User
 
@@ -223,38 +223,38 @@ deploy_kubernetes_cluster = true
 
 ```hcl
 # WireGuard Keys (generate with: wg genkey | wg pubkey)
-debian_wireguard_private_key  = "4Cjlvtm62BQufiTxlTSsv61DtkVRMVjw03nsuxtDBG0="
-bastion_wireguard_private_key = "yG0xWHFCfVRotwhJ+VQHD52ow4M6I1iCLeSvE6bYtVc="
-bastion_wireguard_public_key  = "39oLcmw2XRX57PguWfsqlZmURajuRJQiUUj+mvqIWhU="
+debian_wireguard_private_key  = "YOUR_DEBIAN_WIREGUARD_PRIVATE_KEY_HERE"
+bastion_wireguard_private_key = "YOUR_BASTION_WIREGUARD_PRIVATE_KEY_HERE"
+bastion_wireguard_public_key  = "YOUR_BASTION_WIREGUARD_PUBLIC_KEY_HERE"
 
-# Emergency access
-frp_token = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+# Emergency access (generate with: openssl rand -hex 32)
+frp_token = "YOUR_FRP_TOKEN_HERE"
 
 # SSH User
 jump_host_jump_user = "ubuntu"
 
-# SSH Keys
-jump_host_jump_user_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJTWy8XZL+zgsAYuk0xB7ceVIZYqvQQMF24ccnbhXEWk john@laptop"
-jump_host_admin_authorized_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHk+XuQ8aeagMG3qnJHrDczpjwSwMa4gRqCI8oNpJILu admin@admin"
+# SSH Keys (use output from: cat ~/.ssh/id_ed25519.pub)
+jump_host_jump_user_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxxxxxxxxxxxxxxx user@host"
+jump_host_admin_authorized_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxxxxxxxxxxxxxxx admin@host"
 
 # AWS Key Pair Name
 jump_host_key_name = "my-aws-key"
 
-# Bootstrap CIDRs (restrict to your IP)
+# Bootstrap CIDRs (restrict to your IP, find with: curl https://ifconfig.me)
 jump_host_bootstrap_ssh_cidrs = ["1.2.3.4/32"]
 
 # WireGuard Peers
 wireguard_peers = [
   {
-    name                 = "debian-host"
-    public_key           = "LpSeYGB1WDHHLr2bwrZFsVcjCAnXdwCs7xF9WhmbX1s="
+    name                 = "kubernetes-host"
+    public_key           = "YOUR_K8S_HOST_PUBLIC_KEY_HERE"
     allowed_ips          = ["10.99.0.2/32"]
     persistent_keepalive = 25
   },
   {
-    name                 = "john-laptop"
-    public_key           = "SK5gYFUBINcDwtARBLmtGVcr1hv2N68QDmXWx4Gt3Dc="
-    allowed_ips          = ["10.99.0.15/32"]
+    name                 = "team-member-1"
+    public_key           = "YOUR_TEAM_MEMBER_PUBLIC_KEY_HERE"
+    allowed_ips          = ["10.99.0.10/32"]
     persistent_keepalive = 25
   }
 ]

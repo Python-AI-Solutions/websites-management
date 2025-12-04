@@ -182,8 +182,9 @@ Check logs and status:
 # Check etcd encryption
 kubectl get secrets -A
 
-# View API audit logs (stored on Debian host)
-ssh debian-host tail -f /var/log/kubernetes/audit.log
+# View API audit logs (stored on Debian host via WireGuard VPN)
+# Replace <DEBIAN_HOST_IP> with your Debian host WireGuard IP (10.99.0.2)
+ssh sysadmin@<DEBIAN_HOST_IP> tail -f /var/log/kubernetes/audit.log
 ```
 
 ## Troubleshooting

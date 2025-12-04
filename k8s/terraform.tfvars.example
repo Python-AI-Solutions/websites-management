@@ -47,7 +47,7 @@ wireguard_peers = [
 
 # Kubernetes control plane endpoint
 # Format: INTERNAL_IP:6443
-control_plane_endpoint = "192.168.1.123:6443"
+control_plane_endpoint = "10.99.0.2:6443"
 
 # Bastion SSH user
 bastion_ssh_user = "YOUR_JUMP_USER_NAME"
