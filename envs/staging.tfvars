@@ -1,4 +1,4 @@
-zone_name     = "pythonaisolutions.com"
+zone_name     = "example.com"
 gmail_enabled = true
 
 # Staging defaults mirror production; adjust records as staging infrastructure diverges.

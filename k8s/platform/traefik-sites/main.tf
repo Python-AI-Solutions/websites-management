@@ -74,7 +74,7 @@ module "cervical_ai_viewer_prod" {
 
   name                           = "cervical-ai-viewer"
   namespace                      = "production"
-  host                           = "cervical-screening.pythonaisolutions.com"
+  host                           = "cervical-screening.example.com"
   root_route_backend             = "upstream"
   upstream_service_name          = "cervical-ai-viewer"
   upstream_service_port          = 80
@@ -96,7 +96,7 @@ module "cervical_ai_viewer_staging" {
 
   name                           = "cervical-ai-viewer-staging"
   namespace                      = "staging"
-  host                           = "staging.cervical-screening.pythonaisolutions.com"
+  host                           = "staging.cervical-screening.example.com"
   root_route_backend             = "upstream"
   upstream_service_name          = "cervical-ai-viewer"
   upstream_service_port          = 80
@@ -118,7 +118,7 @@ module "mlflow" {
 
   name               = "mlflow"
   namespace          = "mlflow"
-  host               = "mlflow.cervical-screening.pythonaisolutions.com"
+  host               = "mlflow.cervical-screening.example.com"
   proxy_service_name = "oauth2-proxy"
   proxy_service_port = 80
   entrypoints        = ["web", "websecure"]

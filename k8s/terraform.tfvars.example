@@ -57,6 +57,18 @@ control_plane_endpoint = "10.99.0.2:6443"
 # Bastion SSH user
 bastion_ssh_user = "YOUR_JUMP_USER_NAME"
 
+# AWS KMS key for Kubernetes node root volume encryption
+jump_host_root_volume_kms_key_id = "arn:aws:kms:YOUR_REGION:YOUR_ACCOUNT_ID:key/YOUR_KEY_ID"
+
+# Traefik ingress hostnames (override code defaults)
+traefik_prod_host    = "cervical-screening.example.com"
+traefik_staging_host = "staging.cervical-screening.example.com"
+traefik_mlflow_host  = "mlflow.cervical-screening.example.com"
+
+# MLflow configuration (override code defaults)
+mlflow_host            = "mlflow.cervical-screening.example.com"
+mlflow_artifact_bucket = "gs://YOUR_GCP_PROJECT-mlflow-artifacts/mlflow"
+
 # Feature flags
 enable_frp_emergency      = true
 deploy_debian_host        = true

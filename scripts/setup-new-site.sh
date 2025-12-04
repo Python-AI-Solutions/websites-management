@@ -28,7 +28,7 @@ if [ $# -lt 4 ]; then
   echo ""
   echo "Arguments:"
   echo "  PROJECT_NAME   - Name of the Cloudflare Pages project (e.g., 'my-blog')"
-  echo "  SUBDOMAIN      - Subdomain for the site (e.g., 'blog' for blog.pythonaisolutions.com)"
+  echo "  SUBDOMAIN      - Subdomain for the site (e.g., 'blog' for blog.example.com)"
   echo "  BUILD_COMMAND  - Command to build the site (e.g., 'pixi run build' or 'npm run build')"
   echo "  BUILD_DIR      - Output directory after build (e.g., '_site', 'out', 'dist')"
   echo ""
@@ -42,7 +42,7 @@ SUBDOMAIN="$2"
 BUILD_COMMAND="$3"
 BUILD_DIR="$4"
 
-ZONE_NAME="pythonaisolutions.com"
+ZONE_NAME="example.com"
 CUSTOM_DOMAIN="${SUBDOMAIN}.${ZONE_NAME}"
 TFVARS_FILE="envs/prod.tfvars"
 

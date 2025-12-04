@@ -1,8 +1,8 @@
-zone_name     = "pythonaisolutions.com"
+zone_name     = "example.com"
 gmail_enabled = true
 
 # Replace placeholder values below with the authoritative DNS data once verified.
-google_site_verification = "CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM"
+google_site_verification = "YOUR_VERIFICATION_TOKEN_HERE"
 
 apex_records = {
   # Apex A records removed - now managed by Cloudflare Pages with CNAME flattening
@@ -10,7 +10,7 @@ apex_records = {
   a = []
 
   txt = [
-    { value = "google-site-verification=CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM", ttl = 3600 },
+    { value = "google-site-verification=YOUR_VERIFICATION_TOKEN_HERE", ttl = 3600 },
     # SPF is now managed by google-workspace-email module (gmail_enabled = true)
   ]
 }
@@ -21,25 +21,25 @@ subdomain_records = {
 
   "cervical-screening" = {
     a = [
-      { value = "104.198.164.116", ttl = 86400 },
+      { value = "203.0.113.1", ttl = 86400 },
     ]
   }
 
   "staging.cervical-screening" = {
     a = [
-      { value = "104.198.164.116", ttl = 86400 },
+      { value = "203.0.113.1", ttl = 86400 },
     ]
   }
 
   "mlflow.cervical-screening" = {
     a = [
-      { value = "104.198.164.116", ttl = 86400 },
+      { value = "203.0.113.1", ttl = 86400 },
     ]
   }
 
   "hih" = {
     a = [
-      { value = "35.194.17.231", ttl = 86400 },
+      { value = "203.0.113.2", ttl = 86400 },
     ]
   }
 
@@ -68,7 +68,7 @@ pages_projects = {
     production_branch = "main"
     build_command     = "pixi run build"
     destination_dir   = "_site"
-    custom_domain     = "presentations.pythonaisolutions.com"
+    custom_domain     = "presentations.example.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
@@ -77,7 +77,7 @@ pages_projects = {
     production_branch = "main"
     build_command     = "pixi run build"
     destination_dir   = "_site"
-    custom_domain     = "handbook.pythonaisolutions.com"
+    custom_domain     = "handbook.example.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
@@ -88,8 +88,8 @@ pages_projects = {
     destination_dir   = "out"
     # Using custom_domains for both apex and www
     custom_domains = [
-      "pythonaisolutions.com",
-      "www.pythonaisolutions.com"
+      "example.com",
+      "www.example.com"
     ]
     dns_ttl     = 3600
     dns_proxied = false
@@ -99,7 +99,7 @@ pages_projects = {
     production_branch = "main"
     build_command     = "npm run build"
     destination_dir   = "dist"
-    custom_domain     = "resume.pythonaisolutions.com"
+    custom_domain     = "resume.example.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
