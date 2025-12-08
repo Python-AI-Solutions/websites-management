@@ -20,6 +20,33 @@ terraform {
   }
 }
 
+# Setup SSH authorized_keys for sysadmin user (for persistent access)
+resource "null_resource" "debian_ssh_key_setup" {
+  count = var.debian_ssh_user_public_key != "" ? 1 : 0
+
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p ~/.ssh && chmod 700 ~/.ssh",
+      "echo '${var.debian_ssh_user_public_key}' >> ~/.ssh/authorized_keys",
+      "sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys",
+      "chmod 600 ~/.ssh/authorized_keys",
+      "echo 'SSH key provisioned for sysadmin'"
+    ]
+
+    connection {
+      type         = "ssh"
+      user         = var.debian_ssh_user
+      host         = var.debian_host_ip
+      agent        = true
+      timeout      = "5m"
+    }
+  }
+
+  triggers = {
+    ssh_key = var.debian_ssh_user_public_key
+  }
+}
+
 # CRITICAL FIX: Update Debian WireGuard configuration
 # Changes VPN IP from 10.99.0.2 (broken) to 10.99.0.20 (correct)
 resource "null_resource" "debian_wireguard_config" {

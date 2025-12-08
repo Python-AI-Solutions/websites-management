@@ -175,6 +175,7 @@ module "debian_host" {
   # Debian host connection details
   debian_host_ip  = var.debian_host_ip
   debian_ssh_user = var.debian_ssh_user
+  debian_ssh_user_public_key = var.debian_ssh_user_public_key
 
   # WireGuard configuration for Debian
   debian_wireguard_ip          = var.debian_wireguard_ip

@@ -251,6 +251,13 @@ variable "debian_ssh_user" {
   default     = "sysadmin"
 }
 
+variable "debian_ssh_user_public_key" {
+  description = "SSH public key for sysadmin user authorized_keys (optional, for persistent access)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "debian_wireguard_ip" {
   description = "WireGuard VPN IP for Debian host (MUST be 10.99.0.2)"
   type        = string

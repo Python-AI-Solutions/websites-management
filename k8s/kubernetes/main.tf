@@ -42,17 +42,13 @@ APISERVER_ARGS
 
   # SSH connection settings
   # Use SSH agent instead of reading key files directly (works with passphrase-protected keys)
+  # Connect directly to Debian on WireGuard VPN (10.99.0.2) without needing bastion jump host
   ssh_connection = {
     type  = "ssh"
     user  = var.ssh_user
     host  = var.host
     port  = var.host_port
     agent = true  # Use SSH agent for authentication
-
-    # Add bastion configuration if provided
-    bastion_host = var.bastion_host != "" ? var.bastion_host : null
-    bastion_user = var.bastion_user != "" ? var.bastion_user : null
-    bastion_port = var.bastion_host != "" ? var.bastion_port : null
   }
 
   # Etcd encryption configuration with AES-CBC
@@ -187,9 +183,6 @@ resource "null_resource" "k8s_host_prep" {
     agent = local.ssh_connection.agent
 
     # Bastion settings (optional)
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   # Disable swap
@@ -281,9 +274,6 @@ resource "null_resource" "wireguard_setup" {
     agent = local.ssh_connection.agent
 
     # Bastion settings (optional)
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   # Install WireGuard
@@ -350,9 +340,6 @@ resource "null_resource" "firewall_setup" {
     agent = local.ssh_connection.agent
 
     # Bastion settings (optional)
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   # Install iptables-persistent
@@ -409,9 +396,6 @@ resource "null_resource" "upload_kubeadm_config" {
     host        = local.ssh_connection.host
     port        = local.ssh_connection.port
 
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   provisioner "file" {
@@ -438,9 +422,6 @@ resource "null_resource" "upload_encryption_config" {
     host        = local.ssh_connection.host
     port        = local.ssh_connection.port
 
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   provisioner "file" {
@@ -475,9 +456,6 @@ resource "null_resource" "upload_audit_policy" {
     host        = local.ssh_connection.host
     port        = local.ssh_connection.port
 
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   provisioner "file" {
@@ -513,9 +491,6 @@ resource "null_resource" "k8s_init" {
     host        = local.ssh_connection.host
     port        = local.ssh_connection.port
 
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   # Initialize cluster if not already initialized
@@ -834,9 +809,6 @@ resource "null_resource" "fetch_kubeconfig" {
       host  = local.ssh_connection.host
       port  = local.ssh_connection.port
 
-      bastion_host = local.ssh_connection.bastion_host
-      bastion_user = local.ssh_connection.bastion_user
-      bastion_port = local.ssh_connection.bastion_port
     }
 
     inline = [
@@ -868,9 +840,6 @@ resource "null_resource" "install_addons" {
     port  = local.ssh_connection.port
     agent = local.ssh_connection.agent
 
-    bastion_host = local.ssh_connection.bastion_host
-    bastion_user = local.ssh_connection.bastion_user
-    bastion_port = local.ssh_connection.bastion_port
   }
 
   # Create namespaces (using sudo for kubeconfig access)
