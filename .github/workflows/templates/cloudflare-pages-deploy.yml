@@ -4,7 +4,7 @@
 #
 # Prerequisites:
 # 1. Cloudflare Pages project must be created via IaC (cloudflare-management repo)
-# 2. GitHub secret CF_API_KEY must be configured in repository settings
+# 2. GitHub secret CLOUDFLARE_API_TOKEN must be configured in repository settings
 #
 # Customize the following variables for your site:
 # - PROJECT_NAME: Must match the Pages project name in Terraform
@@ -25,6 +25,7 @@ on:
 permissions:
   contents: read
   deployments: write
+  pull-requests: write
 
 env:
   PROJECT_NAME: "CHANGE_ME"  # Must match Terraform pages_projects key
@@ -81,13 +82,66 @@ jobs:
       # Deploy preview for pull requests
       - name: Deploy preview
         if: github.event_name == 'pull_request'
+        id: cloudflare-preview
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_KEY }}
-        run: wrangler pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch ${{ github.head_ref }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          output=$(wrangler pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch ${{ github.head_ref }})
+          echo "$output"
+          url=$(echo "$output" | grep -o 'https://[^ ]*\.pages\.dev' | head -1)
+          echo "preview_url=$url" >> $GITHUB_OUTPUT
+
+      # Post preview URL as PR comment
+      - name: Comment PR with preview link
+        if: github.event_name == 'pull_request' && steps.cloudflare-preview.outputs.preview_url
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+            const previewUrl = '${{ steps.cloudflare-preview.outputs.preview_url }}';
+
+            const comment = `## 🚀 Cloudflare Pages Preview Deployed!
+
+            **Preview URL:** ${previewUrl}
+
+            **Commit:** \`${sha}\`
+            **Status:** ✅ Ready
+
+            This preview will be automatically updated when you push new commits.`;
+
+            // Find existing comment to update (avoid duplicates)
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Cloudflare Pages Preview')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment,
+              });
+            }
 
       # Deploy production for main branch
       - name: Deploy production
         if: github.event_name == 'push'
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: wrangler pages deploy ./${{ env.BUILD_DIR }} --project-name ${{ env.PROJECT_NAME }} --branch main --commit-dirty=true

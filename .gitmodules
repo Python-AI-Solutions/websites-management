@@ -16,3 +16,6 @@
 [submodule "sites/hih-presentation"]
 	path = sites/hih-presentation
 	url = git@github.com:python-ai-solutions/hih-presentation.git
+[submodule "sites/entra-validation-app"]
+	path = sites/entra-validation-app
+	url = git@github.com:Python-AI-Solutions/entra-validation-app.git

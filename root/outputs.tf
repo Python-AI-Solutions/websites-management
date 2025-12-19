@@ -26,7 +26,7 @@ output "google_workspace_record_ids" {
     dmarc = try(module.google_workspace[0].dmarc_record_id, null)
     site  = try(module.google_workspace[0].site_verification_id, null)
     dkim  = try(module.google_workspace[0].dkim_record_ids, {})
-  } : {}
+  } : null
 }
 
 output "pages_projects" {
