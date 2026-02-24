@@ -89,6 +89,14 @@ pages_projects = {
     dns_proxied       = false
   }
 
+  "consistency-tracker" = {
+    production_branch = "main"
+    build_command     = "npm run build"
+    destination_dir   = "dist"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
   "agentic-cervical-screener" = {
     production_branch = "main"
     build_command     = "true"
