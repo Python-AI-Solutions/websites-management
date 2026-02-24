@@ -10,8 +10,8 @@ apex_records = {
   a = []
 
   txt = [
-    { value = "google-site-verification=CPcm6QrtRNmu2LWDIyvBsooXrBHxtl6lRsyblr6CttM", ttl = 3600 },
-    # SPF is now managed by google-workspace-email module (gmail_enabled = true)
+    # Site verification is managed by google-workspace-email module (google_site_verification var)
+    # SPF is also managed by google-workspace-email module (gmail_enabled = true)
   ]
 }
 
@@ -19,23 +19,8 @@ subdomain_records = {
   # Note: presentations and www subdomains are managed via pages_projects below
   # DNS CNAME records are automatically created by the Cloudflare Pages module
 
-  "cervical-screening" = {
-    a = [
-      { value = "104.198.164.116", ttl = 86400 },
-    ]
-  }
-
-  "staging.cervical-screening" = {
-    a = [
-      { value = "104.198.164.116", ttl = 86400 },
-    ]
-  }
-
-  "mlflow.cervical-screening" = {
-    a = [
-      { value = "104.198.164.116", ttl = 86400 },
-    ]
-  }
+  # Cervical screening is now served by Cloudflare Pages (see pages_projects below).
+  # The previous k8s-backed A records were removed to avoid DNS conflicts.
 
   "hih" = {
     a = [
@@ -100,6 +85,32 @@ pages_projects = {
     build_command     = "npm run build"
     destination_dir   = "dist"
     custom_domain     = "resume.pythonaisolutions.com"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
+  "consistency-tracker" = {
+    production_branch = "main"
+    build_command     = "npm run build"
+    destination_dir   = "dist"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
+  "agentic-cervical-screener" = {
+    production_branch = "main"
+    build_command     = "true"
+    destination_dir   = "public"
+    custom_domain     = "cervical-screening.pythonaisolutions.com"
+    dns_ttl           = 3600
+    dns_proxied       = false
+  }
+
+  "entra-validation-app" = {
+    production_branch = "main"
+    build_command     = "true"
+    destination_dir   = "public"
+    custom_domain     = "entra-auth.pythonaisolutions.com"
     dns_ttl           = 3600
     dns_proxied       = false
   }
