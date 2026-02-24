@@ -117,8 +117,9 @@ See [Pages Quick Start](docs/pages-quick-start.md) for full instructions.
 
 ## CI/CD
 GitHub Actions (`.github/workflows/ci.yml`) runs:
-- **Plan** on pull requests – defaults to the `staging` workspace unless you add a `workspace:prod` label, and uploads plan artifacts.
-- **Apply** on pushes to `main` – runs against the `prod` workspace under the protected `prod` environment, requiring manual approval before touching live DNS.
+- **Plan-only check** on pull requests and manual dispatch.
+- Defaults to the `staging` workspace unless you add a `workspace:prod` PR label.
+- No automatic apply step runs in GitHub Actions; apply remains a local/manual operator action.
 
 ## Next steps
 - Verify every placeholder in `envs/prod.tfvars` against the registrar before flipping the nameservers.
