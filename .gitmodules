@@ -19,3 +19,6 @@
 [submodule "sites/entra-validation-app"]
 	path = sites/entra-validation-app
 	url = git@github.com:Python-AI-Solutions/entra-validation-app.git
+[submodule "sites/consistency-tracker"]
+	path = sites/consistency-tracker
+	url = git@github.com:leej3/consistency-tracker.git
