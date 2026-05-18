@@ -194,3 +194,78 @@ variable "pages_projects" {
   }))
   default = {}
 }
+
+variable "additional_zones" {
+  description = "Additional Cloudflare DNS zones to manage alongside the primary zone."
+  type = map(object({
+    records = optional(map(object({
+      a = optional(list(object({
+        value   = string
+        ttl     = optional(number)
+        proxied = optional(bool)
+      })), [])
+      aaaa = optional(list(object({
+        value   = string
+        ttl     = optional(number)
+        proxied = optional(bool)
+      })), [])
+      cname = optional(list(object({
+        value   = string
+        ttl     = optional(number)
+        proxied = optional(bool)
+      })), [])
+      txt = optional(list(object({
+        value = string
+        ttl   = optional(number)
+      })), [])
+      mx = optional(list(object({
+        value    = string
+        priority = number
+        ttl      = optional(number)
+      })), [])
+      caa = optional(list(object({
+        tag   = string
+        value = string
+        flags = number
+        ttl   = optional(number)
+      })), [])
+      ns = optional(list(object({
+        value = string
+        ttl   = optional(number)
+      })), [])
+      srv = optional(list(object({
+        service  = string
+        proto    = string
+        name     = string
+        priority = number
+        weight   = number
+        port     = number
+        target   = string
+        ttl      = optional(number)
+      })), [])
+    })), {})
+  }))
+  default = {}
+}
+
+variable "additional_pages_domains" {
+  description = "Custom Cloudflare Pages domains that live outside the primary zone."
+  type = map(object({
+    zone_name    = string
+    project_name = string
+    domains      = list(string)
+    dns_ttl      = optional(number, 3600)
+    dns_proxied  = optional(bool, true)
+  }))
+  default = {}
+
+  validation {
+    condition = alltrue(flatten([
+      for _, group in var.additional_pages_domains : [
+        for domain in group.domains :
+        domain == group.zone_name || endswith(domain, ".${group.zone_name}")
+      ]
+    ]))
+    error_message = "Each additional Pages domain must be either the zone apex or a subdomain of zone_name."
+  }
+}

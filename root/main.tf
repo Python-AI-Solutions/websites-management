@@ -56,3 +56,64 @@ module "pages_projects" {
   production_env_vars = try(each.value.production_env_vars, {})
   preview_env_vars    = try(each.value.preview_env_vars, {})
 }
+
+module "additional_zones" {
+  for_each = var.additional_zones
+  source   = "../modules/cloudflare-zone"
+
+  zone_name  = each.key
+  account_id = var.cloudflare_account_id
+}
+
+module "additional_zone_records" {
+  for_each = var.additional_zones
+  source   = "../modules/cloudflare-records"
+
+  zone_id         = module.additional_zones[each.key].zone_id
+  zone_name       = module.additional_zones[each.key].zone_name
+  records         = each.value.records
+  default_ttl     = 3600
+  default_proxied = false
+}
+
+locals {
+  additional_pages_domains = {
+    for item in flatten([
+      for group_key, group in var.additional_pages_domains : [
+        for domain in group.domains : {
+          key          = "${group_key}:${domain}"
+          zone_name    = group.zone_name
+          project_name = group.project_name
+          domain       = domain
+          dns_ttl      = group.dns_ttl
+          dns_proxied  = group.dns_proxied
+        }
+      ]
+    ]) : item.key => item
+  }
+}
+
+resource "cloudflare_pages_domain" "additional_pages_domains" {
+  for_each = local.additional_pages_domains
+
+  account_id = var.cloudflare_account_id
+  project_name = contains(keys(module.pages_projects), each.value.project_name) ? (
+    module.pages_projects[each.value.project_name].project_name
+  ) : each.value.project_name
+  domain = each.value.domain
+
+  depends_on = [module.additional_zones]
+}
+
+resource "cloudflare_record" "additional_pages_cnames" {
+  for_each = local.additional_pages_domains
+
+  zone_id = module.additional_zones[each.value.zone_name].zone_id
+  name = each.value.domain == each.value.zone_name ? (
+    each.value.zone_name
+  ) : trimsuffix(each.value.domain, ".${each.value.zone_name}")
+  type    = "CNAME"
+  content = "${each.value.project_name}.pages.dev"
+  ttl     = each.value.dns_proxied ? 1 : each.value.dns_ttl
+  proxied = each.value.dns_proxied
+}

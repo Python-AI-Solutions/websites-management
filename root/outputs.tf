@@ -40,3 +40,20 @@ output "pages_projects" {
     }
   }
 }
+
+output "additional_zone_name_servers" {
+  description = "Cloudflare nameservers for additional managed zones."
+  value = {
+    for name, zone in module.additional_zones : name => zone.name_servers
+  }
+}
+
+output "additional_pages_domains" {
+  description = "Additional custom domains attached to Cloudflare Pages projects."
+  value = {
+    for key, domain in cloudflare_pages_domain.additional_pages_domains : key => {
+      project_name = domain.project_name
+      domain       = domain.domain
+    }
+  }
+}
