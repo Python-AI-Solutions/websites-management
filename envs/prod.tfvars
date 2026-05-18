@@ -115,3 +115,64 @@ pages_projects = {
     dns_proxied       = false
   }
 }
+
+# Additional Cloudflare zones managed in the same production state.
+additional_zones = {
+  "nostringsresume.com" = {
+    records = {
+      # Preserve Hover hosted email while moving web traffic to Cloudflare Pages.
+      "@" = {
+        mx = [
+          { value = "mx.hover.com.cust.hostedemail.com", priority = 10, ttl = 3600 },
+        ]
+      }
+
+      "mail" = {
+        cname = [
+          { value = "mail.hover.com.cust.hostedemail.com", ttl = 3600 },
+        ]
+      }
+    }
+  }
+
+  "nostringsresume.org" = {
+    records = {
+      # Preserve Hover hosted email while moving web traffic to Cloudflare Pages.
+      "@" = {
+        mx = [
+          { value = "mx.hover.com.cust.hostedemail.com", priority = 10, ttl = 3600 },
+        ]
+      }
+
+      "mail" = {
+        cname = [
+          { value = "mail.hover.com.cust.hostedemail.com", ttl = 3600 },
+        ]
+      }
+    }
+  }
+}
+
+additional_pages_domains = {
+  "nostringsresume-com" = {
+    zone_name    = "nostringsresume.com"
+    project_name = "no-strings-resume"
+    domains = [
+      "nostringsresume.com",
+      "www.nostringsresume.com",
+    ]
+    dns_ttl     = 3600
+    dns_proxied = true
+  }
+
+  "nostringsresume-org" = {
+    zone_name    = "nostringsresume.org"
+    project_name = "no-strings-resume"
+    domains = [
+      "nostringsresume.org",
+      "www.nostringsresume.org",
+    ]
+    dns_ttl     = 3600
+    dns_proxied = true
+  }
+}
