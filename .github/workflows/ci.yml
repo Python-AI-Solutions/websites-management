@@ -24,7 +24,7 @@ jobs:
         run: pixi run init
 
       - name: OpenTofu fmt check
-        run: cd root && tofu fmt -check -recursive
+        run: pixi run bash -c 'cd root && tofu fmt -check -recursive'
 
       - name: OpenTofu validate
         run: pixi run validate
