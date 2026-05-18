@@ -1,17 +1,20 @@
 # Sites Inventory
 
-This directory contains git submodules for all sites/applications under the pythonaisolutions.com domain.
+This directory contains site repositories tracked from the parent `websites-management` repo. Most are Git submodules, and newer additions should follow the same pattern.
 
-## Installed Submodules
+## Tracked Site Repositories
 
-All 6 sites have been successfully added as git submodules:
+The current inventory is:
 
-1. ✅ hih-presentation
-2. ✅ no-strings-resume
-3. ✅ agentic-cervical-screener
-4. ✅ company-handbook
-5. ✅ pythonaisolutions_website
-6. ✅ operandi
+1. `agentic-cervical-screener`
+2. `company-handbook`
+3. `consistency-tracker`
+4. `entra-validation-app`
+5. `hih-presentation`
+6. `migration-computation`
+7. `no-strings-resume`
+8. `operandi`
+9. `pythonaisolutions_website`
 
 ## Quick Analysis
 
@@ -19,7 +22,7 @@ Run `pixi run analyze-sites` to see deployment configuration details for all sit
 
 ## Purpose
 
-Having all sites as submodules allows:
+Tracking the site repos here allows:
 - Centralized DNS management for all sites
 - Easy verification that DNS records match deployment targets
 - Unified view of all properties when planning migrations

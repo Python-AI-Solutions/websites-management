@@ -42,6 +42,8 @@ for site in */; do
   has_requirements=false
   has_dockerfile=false
   has_k8s=false
+  has_github_workflows=false
+  has_cloudflare_pages=false
   deployment_type="Unknown"
 
   if [ -f "package.json" ]; then
@@ -53,6 +55,8 @@ for site in */; do
       deployment_type="Next.js (Static/SSR)"
     elif grep -q "react" package.json 2>/dev/null; then
       deployment_type="React (Static)"
+    elif grep -q '"vite"' package.json 2>/dev/null; then
+      deployment_type="Vite (Static)"
     elif grep -q "vue" package.json 2>/dev/null; then
       deployment_type="Vue (Static)"
     elif grep -q "svelte" package.json 2>/dev/null; then
@@ -86,6 +90,14 @@ for site in */; do
     deployment_type="${deployment_type} (K8s)"
   fi
 
+  if compgen -G ".github/workflows/*.yml" >/dev/null || compgen -G ".github/workflows/*.yaml" >/dev/null; then
+    has_github_workflows=true
+  fi
+
+  if [ -f "wrangler.toml" ] || grep -Rqs "wrangler pages deploy\|cloudflare/pages-action" .github/workflows 2>/dev/null; then
+    has_cloudflare_pages=true
+  fi
+
   # Check for static site generators
   if [ -f "config.toml" ] || [ -f "config.yaml" ]; then
     deployment_type="Hugo (Static)"
@@ -104,7 +116,8 @@ for site in */; do
   [ "$has_dockerfile" = true ] && echo "     - Dockerfile"
   [ "$has_k8s" = true ] && echo "     - K8s configs"
   [ -f "README.md" ] && echo "     - README.md"
-  [ -f ".github/workflows/"*.yml ] && echo "     - GitHub Actions workflows"
+  [ "$has_github_workflows" = true ] && echo "     - GitHub Actions workflows"
+  [ "$has_cloudflare_pages" = true ] && echo "     - Cloudflare Pages deployment"
 
   # Check for Cloudflare Pages indicator
   if [ -f "wrangler.toml" ]; then

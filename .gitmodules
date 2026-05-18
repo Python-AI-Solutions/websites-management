@@ -22,3 +22,6 @@
 [submodule "sites/consistency-tracker"]
 	path = sites/consistency-tracker
 	url = git@github.com:leej3/consistency-tracker.git
+[submodule "sites/migration-computation"]
+	path = sites/migration-computation
+	url = git@github.com:leej3/migration-computation.git
