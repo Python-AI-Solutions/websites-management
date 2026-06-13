@@ -1,20 +1,6 @@
 # Sites Inventory
 
-This directory contains site repositories tracked from the parent `websites-management` repo. Most are Git submodules, and newer additions should follow the same pattern.
-
-## Tracked Site Repositories
-
-The current inventory is:
-
-1. `agentic-cervical-screener`
-2. `company-handbook`
-3. `consistency-tracker`
-4. `entra-validation-app`
-5. `hih-presentation`
-6. `migration-computation`
-7. `no-strings-resume`
-8. `operandi`
-9. `pythonaisolutions_website`
+This directory contains site repositories tracked from the parent `websites-management` repo. The current tracked sites are Git submodules pinned by the parent repo; do not replace those pins with state from another local checkout.
 
 ## Quick Analysis
 
@@ -30,11 +16,15 @@ Tracking the site repos here allows:
 
 ## Managing Submodules
 
+### Clean Checkout Rule
+
+Use `.gitmodules` and the parent gitlinks as the source of truth. Avoid adding submodules from local paths or copying site state from another checkout, because that can pull stale local-main changes into this parent repo.
+
 ### Initial Clone
 When cloning this repository, initialize all submodules:
 ```bash
-git clone git@github.com:YOUR-ORG/cloudflare-management.git
-cd cloudflare-management
+git clone git@github.com:Python-AI-Solutions/websites-management.git
+cd websites-management
 git submodule update --init --recursive
 ```
 
