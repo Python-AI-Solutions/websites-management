@@ -28,3 +28,6 @@
 [submodule "sites/food-tracker"]
 	path = sites/food-tracker
 	url = git@github.com:leej3/food-tracker.git
+[submodule "sites/used-ev-evaluator"]
+	path = sites/used-ev-evaluator
+	url = git@github.com:leej3/used-ev-evaluator.git

@@ -2,27 +2,6 @@
 
 This directory contains site repositories tracked from the parent `websites-management` repo. The current tracked sites are Git submodules pinned by the parent repo; do not replace those pins with state from another local checkout.
 
-## Tracked Site Repositories
-
-| Site path | Repository | Production inventory |
-| --- | --- | --- |
-| `sites/agentic-cervical-screener` | `git@github.com:Python-AI-Solutions/agentic-cervical-screener.git` | Cloudflare Pages: `cervical-screening.pythonaisolutions.com` |
-| `sites/company-handbook` | `git@github.com:Python-AI-Solutions/company-handbook.git` | Cloudflare Pages: `handbook.pythonaisolutions.com` |
-| `sites/consistency-tracker` | `git@github.com:leej3/consistency-tracker.git` | Cloudflare Pages project without a custom domain in `envs/prod.tfvars` |
-| `sites/entra-validation-app` | `git@github.com:Python-AI-Solutions/entra-validation-app.git` | Cloudflare Pages: `entra-auth.pythonaisolutions.com` |
-| `sites/food-tracker` | `git@github.com:leej3/food-tracker.git` | Cloudflare Pages: `food-tracker-7qq.pages.dev`; not managed in `envs/prod.tfvars` |
-| `sites/hih-presentation` | `git@github.com:python-ai-solutions/hih-presentation.git` | Cloudflare Pages: `presentations.pythonaisolutions.com` |
-| `sites/migration-computation` | `git@github.com:leej3/migration-computation.git` | Tracked repo; no Cloudflare Pages project in `envs/prod.tfvars` |
-| `sites/no-strings-resume` | `git@github.com:NoStringsDevelopment/no-strings-resume.git` | Cloudflare Pages: `resume.pythonaisolutions.com`, `nostringsresume.com`, `www.nostringsresume.com`, `nostringsresume.org`, `www.nostringsresume.org` |
-| `sites/operandi` | `git@github.com:Python-AI-Solutions/operandi.git` | Tracked repo; no Cloudflare Pages project in `envs/prod.tfvars` |
-| `sites/pythonaisolutions_website` | `git@github.com:Python-AI-Solutions/pythonaisolutions_website.git` | Cloudflare Pages: `pythonaisolutions.com`, `www.pythonaisolutions.com` |
-
-## Pending Site Repositories
-
-| Site | Status | Next parent-repo action |
-| --- | --- | --- |
-| Recharged model comparison app | `tesla-used-evaluator` evolved into a generic comparison app that scraped `recharged.com`; `recharged.com` itself is external. No app remote repo URL is recorded here yet. | Deferred for this pass. See [Recharged model comparison](../docs/websites/recharged-model-comparison.md). |
-
 ## Quick Analysis
 
 Run `pixi run analyze-sites` to see deployment configuration details for all sites.
