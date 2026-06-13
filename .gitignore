@@ -1,16 +1,35 @@
 # Environment files
 .env
-.env.local
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.dev.vars
+.dev.vars.*
 
 # Terraform/OpenTofu files
 .terraform/
+.terraform.d/
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.*
+crash.log
+crash.*.log
+tfplan
+tfplan-*
 *.tfplan
 .tofu-cache/
 terraform.tfvars
+terraform.tfvars.json
+*.tfvars
+*.tfvars.json
 *.auto.tfvars
+*.auto.tfvars.json
+!envs/prod.tfvars
+!envs/staging.tfvars
+!k8s/aws/wireguard-peers.auto.tfvars.json
+!*.tfvars.example
+!*.tfvars.json.example
 override.tf
 override.tf.json
 *_override.tf
@@ -18,9 +37,13 @@ override.tf.json
 
 # Kubernetes files
 kubeconfig
+kubeconfig.*
 *.kubeconfig
+*.kubeconfig.*
 k8s/kubeconfig
 k8s/tmp-*
+k8s/**/tmp-*.yaml
+k8s/**/tmp-*.yml
 k8s/join-command.txt
 
 # Remote state setup (bootstrap)
@@ -33,6 +56,12 @@ __pycache__/
 .pixi/
 .venv/
 pixi.lock
+
+# Local service/tool caches and test artifacts
+.wrangler/
+**/supabase/.temp/
+test-results/
+playwright-report/
 
 # OS files
 .DS_Store

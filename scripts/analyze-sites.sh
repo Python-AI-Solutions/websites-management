@@ -7,6 +7,35 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SITES_DIR="${REPO_ROOT}/sites"
 
+print_tfvars_map_keys() {
+  local map_name="$1"
+  local file="$2"
+  local keys
+
+  keys=$(awk -v map_name="${map_name}" '
+    $0 == map_name " = {" {
+      in_map = 1
+      next
+    }
+    in_map && $0 == "}" {
+      in_map = 0
+      next
+    }
+    in_map && $0 ~ /^  "[^"]+"[[:space:]]*=[[:space:]]*\{/ {
+      line = $0
+      sub(/^  "/, "", line)
+      sub(/".*/, "", line)
+      print "  - " line
+    }
+  ' "${file}")
+
+  if [ -n "${keys}" ]; then
+    printf '%s\n' "${keys}"
+  else
+    echo "  - (none)"
+  fi
+}
+
 echo "====================================="
 echo "Sites Analysis"
 echo "====================================="
@@ -21,14 +50,28 @@ cd "${SITES_DIR}"
 
 for site in */; do
   site_name=$(basename "$site")
+  submodule_name="sites/${site_name}"
+  submodule_url=$(git -C "${REPO_ROOT}" config --file .gitmodules --get "submodule.${submodule_name}.url" 2>/dev/null || true)
+  parent_gitlink=$(git -C "${REPO_ROOT}" ls-tree HEAD "${submodule_name}" | awk '$1 == "160000" {print $3}')
+
   echo "📁 ${site_name}"
   echo "   Path: sites/${site_name}"
+  if [ -n "${submodule_url}" ]; then
+    echo "   Submodule URL: ${submodule_url}"
+  fi
+  if [ -n "${parent_gitlink}" ]; then
+    echo "   Parent gitlink: ${parent_gitlink}"
+  fi
 
   cd "${site_name}"
 
   # Check if it's a valid git repo (submodules have .git as a file, not directory)
   if [ ! -e ".git" ]; then
-    echo "   ⚠️  Not a git repository (submodule may not be initialized)"
+    if [ -n "${submodule_url}" ]; then
+      echo "   Status: Submodule registered but not initialized"
+    else
+      echo "   ⚠️  Not a git repository"
+    fi
     cd ..
     continue
   fi
@@ -36,6 +79,9 @@ for site in */; do
   # Get remote URL
   remote_url=$(git remote get-url origin 2>/dev/null || echo "Unknown")
   echo "   Repository: ${remote_url}"
+  if [ -n "${submodule_url}" ] && [ "${remote_url}" != "${submodule_url}" ]; then
+    echo "   Warning: initialized origin differs from .gitmodules"
+  fi
 
   # Check for common static site indicators
   has_package_json=false
@@ -140,8 +186,20 @@ echo ""
 if [ -f "${REPO_ROOT}/envs/prod.tfvars" ]; then
   cd "${REPO_ROOT}"
 
-  echo "Subdomains currently in DNS:"
-  grep -E '^\s+"[^"]+"\s+=\s+\{' envs/prod.tfvars | sed 's/.*"\([^"]*\)".*/  - \1/'
+  echo "Subdomain records:"
+  print_tfvars_map_keys "subdomain_records" envs/prod.tfvars
+
+  echo ""
+  echo "Cloudflare Pages projects:"
+  print_tfvars_map_keys "pages_projects" envs/prod.tfvars
+
+  echo ""
+  echo "Additional zones:"
+  print_tfvars_map_keys "additional_zones" envs/prod.tfvars
+
+  echo ""
+  echo "Additional Pages domain groups:"
+  print_tfvars_map_keys "additional_pages_domains" envs/prod.tfvars
 
   echo ""
   echo "Consider mapping these to sites in sites/README.md"

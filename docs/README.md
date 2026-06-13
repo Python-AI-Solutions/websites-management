@@ -1,71 +1,61 @@
 # Documentation Index
 
-## Migration Documents
+Use this index to distinguish the current production DNS/static-site work from migration history and paused Kubernetes notes.
 
-### [Migration Guide](migration-guide.md) - **START HERE**
-Comprehensive step-by-step guide for migrating from Register365 to Cloudflare.
-- Phase 1: Set up Cloudflare (zero downtime)
-- Phase 2: DNS migration (brief downtime)
-- Phase 3: Re-enable GitHub Pages
-- Phase 4: Enable Google Workspace DNS (optional)
+## Current Production Operations
 
-**Use this for:** First-time migration planning and execution.
+### [Cloudflare Pages Quick Start](pages-quick-start.md)
+Short workflow for adding or updating a static site on Cloudflare Pages.
 
-### [Migration Checklist](migration-checklist.md)
-Quick reference checklist for the migration process. Print this or keep it open during migration.
-
-**Use this for:** Day-of migration task tracking.
-
-## Reference Documents
-
-### [DNS Records Review](dns-records-review.md)
-Analysis of current DNS records with recommendations on what to keep, update, or remove.
-
-**Use this for:** Understanding your current DNS configuration.
-
-### [Removed DNS Records](removed-dns-records.md)
-Archive of DNS records that were removed during cleanup (mostly obsolete Register365 email infrastructure).
-
-**Use this for:** Historical reference if you need to verify what was removed.
-
-### [Google Workspace Setup](google-workspace-setup.md)
-Detailed guide for enabling Google Workspace email management via the IaC module (Phase 4).
-
-**Use this for:** When you're ready to manage Gmail DNS records via OpenTofu.
+### [Cloudflare Pages Infrastructure as Code](cloudflare-pages-iac.md)
+Architecture and operational guide for managing Pages projects, DNS records, custom domains, and certificates from OpenTofu.
 
 ### [DNS Records Reference](dns-records-reference.md)
-Technical reference for the DNS record structure and formats used in `prod.tfvars`.
+Technical reference for the DNS record structures used by `envs/prod.tfvars`.
 
-**Use this for:** Understanding how to add/modify DNS records in the tfvars files.
+### [Google Workspace DNS Checklist](google-workspace-setup.md)
+Checklist for Google Workspace MX, SPF, DMARC, DKIM, and site verification records.
 
-## Quick Links
+### [Cloudflare API Token Setup](cloudflare-api-token-setup.md)
+Permissions and local environment setup for Cloudflare DNS and Pages operations.
 
-### Before Migration
-1. Read [Migration Guide](migration-guide.md)
-2. Review [DNS Records Review](dns-records-review.md)
-3. Update placeholders in `envs/prod.tfvars`
-4. Run through [Migration Checklist](migration-checklist.md)
+### [Google Site Verification Guide](google-site-verification-guide.md)
+DNS-first verification flow for Google Search Console and related Google services.
 
-### During Migration
-- Follow [Migration Guide](migration-guide.md) Phase 1-3
-- Use `pixi run verify-dns` to check DNS propagation
-- Check off items in [Migration Checklist](migration-checklist.md)
+## Migration History and Reference
 
-### After Migration
-- Complete [Migration Checklist](migration-checklist.md) post-migration items
-- (Optional) Set up [Google Workspace DNS](google-workspace-setup.md)
+### [Migration Guide](migration-guide.md)
+Historical Register365-to-Cloudflare migration guide. Useful for understanding the original cutover sequence, not the current steady state.
 
-## Scripts
+### [Migration Checklist](migration-checklist.md)
+Historical day-of migration checklist.
 
-Located in `../scripts/`:
-- `verify-dns.sh` - Check DNS records and website accessibility (run via `pixi run verify-dns`)
-- `get-account-id.sh` - Retrieve Cloudflare account ID from API
-- `load-env.sh` - Load environment variables from `.env` file
+### [DNS Records Review](dns-records-review.md)
+Review notes from the DNS cleanup and migration planning phase.
 
-## Support
+### [Removed DNS Records](removed-dns-records.md)
+Archive of records removed during cleanup.
 
-If you encounter issues during migration:
-1. Check the Troubleshooting section in [Migration Guide](migration-guide.md)
-2. Review Cloudflare DNS dashboard for record status
-3. Use `pixi run verify-dns` to diagnose DNS issues
-4. Check [Removed DNS Records](removed-dns-records.md) if something is missing
+### [Migrating Static Sites to Cloudflare Pages](migrate-sites-to-cloudflare-pages.md)
+Reference guide for the static-site migration pattern now used by this repo.
+
+## Paused Kubernetes Work
+
+### [Kubernetes Setup Prompt](prompt-for-k8s-setup.md)
+Planning prompt for a future single-node Kubernetes redeploy.
+
+### [Kubernetes Redeploy Risk Notes](k8s-redeploy-risk-notes.md)
+Non-invasive review notes for bastion, WireGuard, FRP, kubeconfig handling, and audit logging before the next redeploy.
+
+Kubernetes, bastion, WireGuard, ingress, and security-hardening materials are retained for future work. They are not the current production operating surface for the public sites.
+
+## Common Commands
+
+```bash
+pixi run fmt
+pixi run validate
+pixi run plan-prod
+pixi run verify-dns
+```
+
+`plan-prod` and apply commands require Cloudflare credentials. Use `verify-dns` after DNS or custom-domain changes.

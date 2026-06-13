@@ -79,3 +79,9 @@ cmd = "bash scripts/analyze-sites.sh"
 
 [tasks."analyze:sites"]
 cmd = "bash scripts/analyze-sites.sh"
+
+[tasks.guardrails]
+cmd = "bash scripts/check-public-guardrails.sh --all"
+
+[tasks."check:guardrails"]
+cmd = "bash scripts/check-public-guardrails.sh --all"

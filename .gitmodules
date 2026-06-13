@@ -25,3 +25,6 @@
 [submodule "sites/migration-computation"]
 	path = sites/migration-computation
 	url = git@github.com:leej3/migration-computation.git
+[submodule "sites/food-tracker"]
+	path = sites/food-tracker
+	url = git@github.com:leej3/food-tracker.git
