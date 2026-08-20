@@ -11,6 +11,7 @@
 .terraform/
 .terraform.d/
 .terraform.lock.hcl
+!root/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 crash.log

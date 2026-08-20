@@ -2,23 +2,23 @@ locals {
   mx_records = [
     {
       priority = 1
-      value    = "ASPMX.L.GOOGLE.COM."
+      value    = "aspmx.l.google.com"
     },
     {
       priority = 5
-      value    = "ALT1.ASPMX.L.GOOGLE.COM."
+      value    = "alt1.aspmx.l.google.com"
     },
     {
       priority = 5
-      value    = "ALT2.ASPMX.L.GOOGLE.COM."
+      value    = "alt2.aspmx.l.google.com"
     },
     {
       priority = 10
-      value    = "ALT3.ASPMX.L.GOOGLE.COM."
+      value    = "alt3.aspmx.l.google.com"
     },
     {
       priority = 10
-      value    = "ALT4.ASPMX.L.GOOGLE.COM."
+      value    = "alt4.aspmx.l.google.com"
     },
   ]
 
