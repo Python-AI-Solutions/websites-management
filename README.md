@@ -46,6 +46,7 @@ What is not being claimed yet:
 - [Documentation index](docs/README.md)
 - [Cloudflare Pages quick start](docs/pages-quick-start.md)
 - [Cloudflare Pages IaC guide](docs/cloudflare-pages-iac.md)
+- [Cloudflare state recovery](docs/cloudflare-state-recovery.md)
 - [DNS records reference](docs/dns-records-reference.md)
 - [Google Workspace DNS checklist](docs/google-workspace-setup.md)
 

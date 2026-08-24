@@ -50,7 +50,7 @@ resource "cloudflare_pages_domain" "custom_domains" {
 
 # DNS CNAME record pointing to Pages project (single domain - legacy support)
 resource "cloudflare_record" "pages_cname" {
-  count = var.custom_domain != "" && var.zone_id != "" ? 1 : 0
+  count = var.custom_domain != "" ? 1 : 0
 
   zone_id = var.zone_id
   name    = trimsuffix(var.custom_domain, ".${var.zone_name}")
@@ -64,7 +64,7 @@ resource "cloudflare_record" "pages_cname" {
 # For apex domains (no subdomain), use CNAME with proxied = true (Cloudflare will flatten it)
 # For subdomains, use CNAME as normal
 resource "cloudflare_record" "pages_cnames" {
-  for_each = var.zone_id != "" ? toset(var.custom_domains) : []
+  for_each = toset(var.custom_domains)
 
   zone_id = var.zone_id
   name    = trimsuffix(each.value, ".${var.zone_name}")

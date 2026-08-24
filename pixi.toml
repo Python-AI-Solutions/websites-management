@@ -51,10 +51,10 @@ cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/staging.tfvars -out=tfplan-staging.tfplan'"
 
 [tasks.plan-prod]
-cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu workspace select prod && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
 
 [tasks."plan:prod"]
-cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu workspace select prod && tofu plan -var-file=../envs/prod.tfvars -out=tfplan-prod.tfplan'"
 
 [tasks.apply-staging]
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
@@ -63,10 +63,10 @@ cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=..
 cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/staging.tfvars -auto-approve'"
 
 [tasks.apply-prod]
-cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && test \"$(tofu workspace show)\" = prod && tofu apply -var-file=../envs/prod.tfvars'"
 
 [tasks."apply:prod"]
-cmd = "bash -c 'source scripts/load-env.sh && cd root && tofu apply -var-file=../envs/prod.tfvars -auto-approve'"
+cmd = "bash -c 'source scripts/load-env.sh && cd root && test \"$(tofu workspace show)\" = prod && tofu apply -var-file=../envs/prod.tfvars'"
 
 [tasks.verify-dns]
 cmd = "python scripts/verify_dns.py"
