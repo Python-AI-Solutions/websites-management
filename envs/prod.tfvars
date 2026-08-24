@@ -97,6 +97,16 @@ pages_projects = {
     dns_proxied       = false
   }
 
+  "orinoco-curation-review" = {
+    production_branch = "main"
+    build_command     = "npm run build"
+    destination_dir   = "dist"
+    production_env_vars = {
+      GITHUB_CLIENT_ID = "Iv23limCfUnRPCFcXx3H"
+      PUBLIC_ORIGIN    = "https://orinoco-curation-review.pages.dev"
+    }
+  }
+
   "agentic-cervical-screener" = {
     production_branch = "main"
     build_command     = "true"
