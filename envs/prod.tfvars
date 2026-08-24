@@ -102,8 +102,9 @@ pages_projects = {
     build_command     = "npm run build"
     destination_dir   = "dist"
     production_env_vars = {
-      GITHUB_CLIENT_ID = "Iv23limCfUnRPCFcXx3H"
-      PUBLIC_ORIGIN    = "https://orinoco-curation-review.pages.dev"
+      EDITOR_RUNTIME_MANIFEST_SHA256 = "4ff3f2ff5a02d94084c262ca00ed5a8259a6ddfc420b9cfa0c4cd8cefe39bb3b"
+      GITHUB_CLIENT_ID                = "Iv23limCfUnRPCFcXx3H"
+      PUBLIC_ORIGIN                   = "https://orinoco-curation-review.pages.dev"
     }
   }
 
