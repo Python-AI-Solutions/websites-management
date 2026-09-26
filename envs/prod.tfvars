@@ -97,6 +97,12 @@ pages_projects = {
     dns_proxied       = false
   }
 
+  "mole-tracker" = {
+    production_branch = "main"
+    build_command     = "npm run build"
+    destination_dir   = "dist"
+  }
+
   "orinoco-curation-review" = {
     production_branch = "main"
     build_command     = "npm run build"

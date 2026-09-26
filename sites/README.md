@@ -14,6 +14,12 @@ Tracking the site repos here allows:
 - Unified view of all properties when planning migrations
 - Version control of which site versions are deployed
 
+## Current Additions
+
+| Site | Hosting | Domain |
+|------|---------|--------|
+| Mole Tracker | Cloudflare Pages (`mole-tracker.pages.dev`) | Pages subdomain only |
+
 ## Managing Submodules
 
 ### Clean Checkout Rule
